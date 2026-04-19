@@ -1,0 +1,112 @@
+.editor-input {
+    width: 100%;
+    border: none;
+    border-bottom: 1px solid #ccc;
+    padding: 6px 2px;
+    font-size: 15px;
+    resize: none;
+    outline: none;
+    background: transparent;
+    transition: border-color 0.2s;
+    border-radius: 0;
+}
+
+.editor-input:focus {
+    border-bottom: 1px solid #007bff;
+    box-shadow: none;
+}
+
+.editor-input.error {
+    border-bottom: 2px solid red;
+}
+
+.editor-input:not(:placeholder-shown) {
+    border-bottom: 1px solid #999;
+}
+
+.preview-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: start;
+    padding: 40px 0;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.preview-paper {
+    width: 794px;
+    min-height: 1123px;
+    background: white;
+
+    padding-top: 20mm;
+    padding-bottom: 20mm;
+    padding-left: 20mm;
+    padding-right: 20mm;
+
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+}
+
+.section-title {
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+.preview-paper p {
+    margin: 0;
+}
+
+.preview-paper ul {
+    padding-left: 20px;
+}
+
+.preview-paper ol {
+    padding-left: 20px;
+}
+
+.preview-toolbar {
+    position: fixed;
+    top: 20px;
+    right: 40px;
+    display: flex;
+    gap: 10px;
+    z-index: 1100;
+}
+
+.preview-toolbar button {
+    padding: 8px 14px;
+    border: none;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.preview-toolbar button:hover {
+    background: #eee;
+}
+
+.level-1 {
+    font-size: 20px;
+    font-weight: bold;
+    margin-top: 20px;
+}
+
+.level-2 {
+    font-size: 17px;
+    font-weight: 600;
+    margin-top: 15px;
+}
+
+.level-3 {
+    font-size: 15px;
+    font-weight: 500;
+    margin-top: 10px;
+}

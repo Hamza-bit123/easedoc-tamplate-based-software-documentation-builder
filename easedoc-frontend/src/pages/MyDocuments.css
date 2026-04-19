@@ -1,0 +1,17 @@
+.docs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 15px;
+}
+
+.doc-card {
+    background: white;
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.doc-card:hover {
+    background: #f1f5f9;
+}
