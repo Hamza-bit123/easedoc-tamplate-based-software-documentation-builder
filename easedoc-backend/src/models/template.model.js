@@ -44,10 +44,26 @@ export const createTemplate = (data, callback) => {
 export const addTemplateSections = (sections, callback) => {
   const sql = `
     INSERT INTO template_sections (
-      template_id, title, section_order, is_required,
-      font_size, font_weight, text_align,
-      line_height, list_type, bullet_style,
-      margin_top, margin_bottom, padding_left
+      template_id,
+      title,
+      section_order,
+      level,
+      is_required,
+
+      title_font_size,
+      title_font_weight,
+      title_text_align,
+
+      body_font_size,
+      body_font_weight,
+      body_text_align,
+
+      line_height,
+      list_type,
+
+      margin_top,
+      margin_bottom,
+      padding_left
     ) VALUES ?
   `;
 
@@ -55,13 +71,20 @@ export const addTemplateSections = (sections, callback) => {
     s.template_id,
     s.title,
     s.section_order,
+    s.level,
     s.is_required,
-    s.font_size,
-    s.font_weight,
-    s.text_align,
+
+    s.title_font_size,
+    s.title_font_weight,
+    s.title_text_align,
+
+    s.body_font_size,
+    s.body_font_weight,
+    s.body_text_align,
+
     s.line_height,
     s.list_type,
-    s.bullet_style,
+
     s.margin_top,
     s.margin_bottom,
     s.padding_left,

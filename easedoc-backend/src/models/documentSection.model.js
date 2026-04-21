@@ -2,14 +2,22 @@ import db from "../config/db.js";
 
 export const upsertSection = (data, callback) => {
   const sql = `
-    INSERT INTO document_sections (document_id, template_section_id, content)
-    VALUES (?, ?, ?)
-    ON DUPLICATE KEY UPDATE content = VALUES(content)
+    INSERT INTO document_sections 
+    (document_id, template_section_id, content, custom_title)
+    VALUES (?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+      content = VALUES(content),
+      custom_title = VALUES(custom_title)
   `;
 
   db.query(
     sql,
-    [data.document_id, data.template_section_id, data.content],
+    [
+      data.document_id,
+      data.template_section_id,
+      data.content,
+      data.custom_title,
+    ],
     callback,
   );
 };
