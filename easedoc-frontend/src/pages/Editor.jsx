@@ -10,7 +10,7 @@ const Editor = () => {
   const [template, setTemplate] = useState(null);
   const [sections, setSections] = useState({});
   const [errors, setErrors] = useState({});
-  const [previewMode, setPreviewMode] = useState(false);
+  const [previewHTML, setPreviewHTML] = useState("");
   const [saving, setSaving] = useState(false);
   const PAGE_HEIGHT = 1122; // px (~A4)
 
@@ -18,7 +18,14 @@ const Editor = () => {
   useEffect(() => {
     loadEditor();
   }, []);
-
+  useEffect(() => {
+    setTimeout(() => {
+      document.querySelectorAll(".editor-input").forEach((textarea) => {
+        textarea.style.height = "auto";
+        textarea.style.height = textarea.scrollHeight + "px";
+      });
+    }, 0);
+  }, [sections]);
   const loadEditor = async () => {
     try {
       const doc = await api.get(`/documents/${documentId}`);
@@ -118,41 +125,40 @@ const Editor = () => {
     }
   };
 
-  // ================= PREVIEW (FIXED) =================
   const handlePreview = async () => {
     await saveAll();
 
     const isValid = await validate();
     if (!isValid) return;
+    const html = generatePrintHTML(template, sections, false);
 
-    const html = generatePrintHTML(template, sections);
+    // const previewWindow = window.open("", "_blank");
 
-    const previewWindow = window.open("", "_blank");
+    // previewWindow.document.open();
+    // previewWindow.document.write(html);
+    // previewWindow.document.close();
 
-    previewWindow.document.open();
-    previewWindow.document.write(html);
-    previewWindow.document.close();
+    // previewWindow.focus();
 
-    previewWindow.focus();
-    // previewWindow.print();
-    // setTimeout(() => {
-    //   previewWindow.print();
-    // }, 500);
+    setPreviewHTML(html);
   };
 
   // ================= EXPORT FIX =================
   const handleExport = async () => {
-    try {
-      const res = await api.get(`/export/pdf/${documentId}`, {
-        responseType: "blob",
-      });
+    const html = generatePrintHTML(template, sections, true);
 
-      const url = window.URL.createObjectURL(new Blob([res.data]));
+    try {
+      const res = await api.post(
+        "/export/pdf",
+        { html },
+        { responseType: "blob" },
+      );
+
+      const url = window.URL.createObjectURL(res.data);
       const link = document.createElement("a");
 
       link.href = url;
-      link.setAttribute("download", "document.pdf");
-      document.body.appendChild(link);
+      link.download = "document.pdf";
       link.click();
     } catch (err) {
       console.log(err);
@@ -225,48 +231,85 @@ const Editor = () => {
 
   const numberedSections = generateNumbering(template.sections);
   const pages = paginateSections(numberedSections);
+
   return (
     <div className="editor">
+      {previewHTML && (
+        <div className="preview-overlay">
+          <button onClick={() => setPreviewHTML("")}>Close Preview</button>
+
+          <iframe
+            title="preview"
+            srcDoc={previewHTML}
+            className="preview-frame"
+          />
+        </div>
+      )}
       {/* HEADER */}
       <div className="editor-header">
         <h1>{template.name}</h1>
 
         <div>
-          <button onClick={saveAll}>{saving ? "Saving..." : "Save"}</button>
+          <button
+            onClick={saveAll}
+            className={saving ? "saving-pulse" : ""}
+            disabled={saving}
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
 
           <button onClick={handlePreview}>Preview</button>
 
           <button onClick={handleExport}>Export PDF</button>
+
+          <button
+            onClick={() =>
+              window.open(`http://localhost:5000/api/export/word/${documentId}`)
+            }
+          >
+            Export Word
+          </button>
         </div>
       </div>
 
       {/* EDIT MODE */}
-      {!previewMode &&
-        numberedSections?.map((sec) => (
-          <div key={sec.id} className="section">
-            <h2 className={`level-${sec.level}`}>{sec.number}</h2>
+      {pages.map((page, pageIndex) => (
+        <div key={pageIndex} className="page">
+          {page.map((sec) => (
+            <div key={sec.id} className="section">
+              <h2
+                className={`level-${sec.level}`}
+                style={{
+                  height: "fit-content",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  padding: 0,
+                }}
+              >
+                {sec.number}.{" "}
+                <input
+                  value={sections[sec.id]?.title || sec.title}
+                  onChange={(e) => handleTitleChange(sec.id, e.target.value)}
+                  className="editor-title"
+                />
+              </h2>
 
-            {/* TITLE (editable) */}
-            <input
-              value={sections[sec.id]?.title || sec.title}
-              onChange={(e) => handleTitleChange(sec.id, e.target.value)}
-              className="editor-title"
-            />
-
-            {/* BODY */}
-            <textarea
-              placeholder="Type here..."
-              value={sections[sec.id]?.content || ""}
-              onChange={(e) => handleContentChange(sec.id, e.target.value)}
-              className={`editor-input ${errors[sec.id] ? "error" : ""}`}
-              rows={1}
-              onInput={(e) => {
-                e.target.style.height = "auto";
-                e.target.style.height = e.target.scrollHeight + "px";
-              }}
-            />
-          </div>
-        ))}
+              <textarea
+                placeholder="Type here..."
+                value={sections[sec.id]?.content || ""}
+                onChange={(e) => handleContentChange(sec.id, e.target.value)}
+                className={`editor-input ${errors[sec.id] ? "error" : ""}`}
+                rows={1}
+                onInput={(e) => {
+                  e.target.style.height = "auto";
+                  e.target.style.height = e.target.scrollHeight + "px";
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      ))}
     </div>
   );
 };

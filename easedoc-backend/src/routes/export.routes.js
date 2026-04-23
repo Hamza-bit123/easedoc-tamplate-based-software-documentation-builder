@@ -1,8 +1,12 @@
 import express from "express";
-import { exportPDFController } from "../controllers/export.controller.js";
+import {
+  exportPDFController,
+  exportWordController,
+} from "../controllers/export.controller.js";
 
 const router = express.Router();
 
-router.get("/pdf/:id", exportPDFController);
+router.post("/pdf", exportPDFController);
+router.get("/word/:id", exportWordController);
 
 export default router;

@@ -1,27 +1,228 @@
+:root {
+    --editor-bg: #f3f4f6;
+    --paper-bg: #ffffff;
+    --primary: #3b82f6;
+    --primary-hover: #2563eb;
+    --text-main: #1f2937;
+    --text-muted: #6b7280;
+    --border: #e5e7eb;
+    --error: #ef4444;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    --shadow-focus: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* --- Main Layout --- */
+.editor {
+    background-color: var(--editor-bg);
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+    padding-bottom: 100px;
+}
+
+/* --- Sticky Header --- */
+.editor-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.8);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.editor-header h1 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0;
+    max-width: 400px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.editor-header div {
+    display: flex;
+    gap: 12px;
+}
+
+/* --- Header Buttons --- */
+.editor-header button {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid var(--border);
+    background: white;
+    color: var(--text-main);
+}
+
+.editor-header button:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+}
+
+.editor-header button:last-child {
+    background: var(--primary);
+    color: white;
+    border: none;
+}
+
+.editor-header button:last-child:hover {
+    background: var(--primary-hover);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+.saving-pulse {
+    animation: pulse 1.5s infinite;
+    cursor: not-allowed;
+}
+
+.section {
+    max-width: 850px;
+    margin: 24px auto;
+    background: var(--paper-bg);
+    padding: 40px 50px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+}
+
+.section:hover {
+    box-shadow: var(--shadow-focus);
+}
+
+/* Numbering Style */
+.section h2 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--text-muted);
+    text-align: right;
+}
+
+/* --- Editable Title --- */
+.editor-title {
+    width: 100%;
+    border: none;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 16px;
+    padding: 4px 0;
+    outline: none;
+    background: transparent;
+    border-bottom: 2px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.editor-title:focus {
+    border-bottom-color: var(--primary);
+}
+
+.level-1 {
+    font-size: 28px;
+    color: var(--primary);
+}
+
+.level-2 {
+    font-size: 22px;
+}
+
+.level-3 {
+    font-size: 18px;
+    color: var(--text-muted);
+}
+
+/* --- The Textarea Body --- */
 .editor-input {
     width: 100%;
     border: none;
-    border-bottom: 1px solid #ccc;
-    padding: 6px 2px;
-    font-size: 15px;
+    font-size: 16px;
+    line-height: 1.7;
+    color: #374151;
+    padding: 0;
     resize: none;
     outline: none;
     background: transparent;
-    transition: border-color 0.2s;
-    border-radius: 0;
+    font-family: 'Inter', sans-serif;
+    min-height: 50px;
 }
 
-.editor-input:focus {
-    border-bottom: 1px solid #007bff;
-    box-shadow: none;
+.editor-input::placeholder {
+    color: #d1d5db;
 }
 
+/* Focus indicator for the whole card */
+.section:focus-within {
+    border-color: var(--primary);
+    ring: 2px solid var(--primary);
+}
+
+/* Error State */
 .editor-input.error {
-    border-bottom: 2px solid red;
+    border: 2px solid #ef4444;
+    background-color: #fffafb;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.05);
 }
 
-.editor-input:not(:placeholder-shown) {
-    border-bottom: 1px solid #999;
+
+/* --- Preview Mode Paper --- */
+.preview-overlay {
+    background: rgba(15, 23, 42, 0.9);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+}
+
+.preview-paper {
+    background: white;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    font-family: 'Times New Roman', Times, serif;
+    /* Professional doc look */
+    line-height: 1.5;
+}
+
+/* --- Custom Scrollbar for the workspace --- */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--editor-bg);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
 
 .preview-overlay {
@@ -31,82 +232,27 @@
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.6);
-    -webkit-backdrop-filter: blur(4px);
-    backdrop-filter: blur(4px);
-    display: flex;
-    justify-content: center;
-    align-items: start;
-    padding: 40px 0;
-    overflow-y: auto;
-    z-index: 1000;
+    z-index: 999;
 }
 
-.preview-paper {
-    width: 794px;
-    min-height: 1123px;
-    background: white;
-
-    padding-top: 20mm;
-    padding-bottom: 20mm;
-    padding-left: 20mm;
-    padding-right: 20mm;
-
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    border-radius: 4px;
-}
-
-.section-title {
-    font-weight: bold;
-    margin-bottom: 6px;
-}
-
-.preview-paper p {
-    margin: 0;
-}
-
-.preview-paper ul {
-    padding-left: 20px;
-}
-
-.preview-paper ol {
-    padding-left: 20px;
-}
-
-.preview-toolbar {
-    position: fixed;
-    top: 20px;
-    right: 40px;
-    display: flex;
-    gap: 10px;
-    z-index: 1100;
-}
-
-.preview-toolbar button {
-    padding: 8px 14px;
+.preview-frame {
+    width: 100%;
+    height: 100%;
     border: none;
-    background: white;
-    border-radius: 6px;
-    cursor: pointer;
+    background: #ccc;
 }
 
-.preview-toolbar button:hover {
-    background: #eee;
-}
+/* --- Responsive --- */
+@media (max-width: 1000px) {
+    .section h2 {
+        position: static;
+        text-align: left;
+        margin-bottom: 8px;
+        display: block;
+    }
 
-.level-1 {
-    font-size: 20px;
-    font-weight: bold;
-    margin-top: 20px;
-}
-
-.level-2 {
-    font-size: 17px;
-    font-weight: 600;
-    margin-top: 15px;
-}
-
-.level-3 {
-    font-size: 15px;
-    font-weight: 500;
-    margin-top: 10px;
+    .section {
+        margin: 20px;
+        padding: 30px;
+    }
 }
