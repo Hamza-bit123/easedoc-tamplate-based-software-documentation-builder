@@ -1,3 +1,43 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+:root {
+    /* Common Accents */
+    --primary: #4e7d96;
+    --secondary: #7ebfb5;
+    --accent-orange: #f2c0a2;
+    --sidebar-teal: #2c4a52;
+    /* Deep Slate Teal from sample image */
+
+    /* Light Mode Colors */
+    --bg-body: #eef2f6;
+    --bg-card: #ffffff;
+    --text-main: #334155;
+    --text-muted: #94a3b8;
+    --border-color: rgba(0, 0, 0, 0.05);
+
+    /* Critical for the Curve Effect */
+    --active-match: var(--bg-body);
+}
+
+[data-theme="dark"] {
+    /* Dark Mode Colors */
+    --bg-body: #0f172a;
+    --bg-card: #1e293b;
+    --text-main: #f1f5f9;
+    --text-muted: #64748b;
+    --border-color: rgba(255, 255, 255, 0.1);
+
+    /* Must update to match dark background */
+    --active-match: var(--bg-body);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+    background-color: var(--bg-body);
+    color: var(--text-main);
+}

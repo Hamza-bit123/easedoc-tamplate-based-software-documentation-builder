@@ -1,0 +1,100 @@
+.sidebar {
+    width: 260px;
+    background-color: var(--sidebar-teal);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    padding: 2rem 0;
+    position: fixed;
+    height: 100vh;
+    z-index: 100;
+}
+
+.sidebar-brand {
+    padding: 0 2rem 3rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand-icon {
+    color: var(--secondary);
+}
+
+.brand-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.sidebar-nav {
+    flex: 1;
+}
+
+.nav-group {
+    margin-bottom: 2rem;
+}
+
+.nav-label {
+    padding: 0 2rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: rgba(255, 255, 255, 0.4);
+    margin-bottom: 0.8rem;
+}
+
+.nav-item {
+    padding: 0.9rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    color: rgba(255, 255, 255, 0.6);
+    text-decoration: none;
+    transition: all 0.3s;
+    position: relative;
+}
+
+/* THE CURVE EFFECT */
+.nav-item.active {
+    background-color: var(--active-match);
+    color: var(--sidebar-teal);
+    border-radius: 40px 0 0 40px;
+    font-weight: 600;
+    margin-left: 1rem;
+}
+
+/* Inverted Top Curve */
+.nav-item.active::before {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    height: 40px;
+    width: 40px;
+    border-bottom-right-radius: 20px;
+    box-shadow: 10px 10px 0 10px var(--active-match);
+    pointer-events: none;
+}
+
+/* Inverted Bottom Curve */
+.nav-item.active::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    right: 0;
+    height: 40px;
+    width: 40px;
+    border-top-right-radius: 20px;
+    box-shadow: 10px -10px 0 10px var(--active-match);
+    pointer-events: none;
+}
+
+.nav-item .icon {
+    transition: transform 0.3s;
+}
+
+.nav-item:hover:not(.active) {
+    color: white;
+    background: rgba(255, 255, 255, 0.05);
+}

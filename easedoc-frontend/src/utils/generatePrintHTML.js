@@ -59,7 +59,7 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
   const paddingLeft = template.page_margin_left * 3.78;
   const paddingRight = template.page_margin_right * 3.78;
 
-  const CONTENT_HEIGHT = PAGE_HEIGHT;
+  const CONTENT_HEIGHT = isPDF ? PAGE_HEIGHT - 25 : PAGE_HEIGHT;
 
   const addNumbering = (sections) => {
     const counters = {};
@@ -92,9 +92,8 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
   measure.style.visibility = "hidden";
   measure.style.width = "794px";
   measure.style.boxSizing = "border-box";
-  measure.style.padding = `${paddingTop}px ${paddingRight}px ${paddingBottom}px ${paddingLeft}px`;
   measure.style.fontFamily = template.default_font_family;
-  measure.style.height = `${PAGE_HEIGHT}px`;
+  measure.style.height = `${CONTENT_HEIGHT}px`;
   measure.style.padding = `${paddingTop}px ${paddingRight}px ${paddingBottom}px ${paddingLeft}px`;
   measure.style.overflow = "hidden";
 
@@ -190,7 +189,7 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
 
     const titleHTML = getTitleHTML(sec, title);
 
-    if (getHeight(currentHTML + titleHTML) > PAGE_HEIGHT) {
+    if (getHeight(currentHTML + titleHTML) > CONTENT_HEIGHT) {
       pushPage();
     }
 
@@ -216,7 +215,7 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
   </${tag}>
 `;
 
-      if (getHeight(currentHTML + listHTML) > PAGE_HEIGHT) {
+      if (getHeight(currentHTML + listHTML) > CONTENT_HEIGHT) {
         pushPage();
       }
 
@@ -248,7 +247,7 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
           getHeight(
             currentHTML +
               `<${testTag}>${listBuffer.join("") + liHTML}</${testTag}>`,
-          ) > PAGE_HEIGHT
+          ) > CONTENT_HEIGHT
         ) {
           flushList();
           listStart = listCounter;
@@ -270,7 +269,7 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
         while (remaining.length > 0) {
           const paraHTML = getParaHTML(sec, remaining);
 
-          if (getHeight(currentHTML + paraHTML) <= PAGE_HEIGHT) {
+          if (getHeight(currentHTML + paraHTML) <= CONTENT_HEIGHT) {
             currentHTML += paraHTML;
             remaining = "";
           } else {

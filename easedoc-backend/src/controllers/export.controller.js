@@ -13,5 +13,12 @@ export const exportPDFController = (req, res) => {
 };
 
 export const exportWordController = (req, res) => {
-  exportWordService(req.params.id, res);
+  const { template, sections } = req.body;
+
+  if (!template || !sections) {
+    return res.status(400).send("Missing data");
+  }
+
+  console.log("hellow");
+  exportWordService(template, sections, res);
 };

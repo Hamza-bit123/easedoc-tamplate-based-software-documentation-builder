@@ -2,7 +2,7 @@ import Layout from "../components/Layout";
 
 const AdminDashboard = () => {
   return (
-    <Layout>
+    <>
       <h2 className="font-bold text-blue-600 underline text-9xl">
         Admin Dashboard
       </h2>
@@ -12,7 +12,7 @@ const AdminDashboard = () => {
       </p>
 
       {/* Later: stats, charts */}
-    </Layout>
+    </>
   );
 };
 

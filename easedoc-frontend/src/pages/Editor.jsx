@@ -3,6 +3,9 @@ import { useParams } from "react-router-dom";
 import api from "../api/axios";
 import "./Editor.css";
 import generatePrintHTML from "../utils/generatePrintHTML";
+import { FiSave, FiEye, FiDownload, FiFileText, FiX } from "react-icons/fi";
+import { BiSolidFileDoc } from "react-icons/bi";
+import "./Editor.css";
 
 const Editor = () => {
   const { documentId } = useParams();
@@ -143,7 +146,7 @@ const Editor = () => {
     setPreviewHTML(html);
   };
 
-  // ================= EXPORT FIX =================
+  // ================= EXPORT =================
   const handleExport = async () => {
     const html = generatePrintHTML(template, sections, true);
 
@@ -163,6 +166,28 @@ const Editor = () => {
     } catch (err) {
       console.log(err);
       alert("Export failed");
+    }
+  };
+
+  //===================== WORD EXPORT====================
+
+  const handleExportWord = async () => {
+    try {
+      const res = await api.post(
+        "/export/word",
+        { template, sections },
+        { responseType: "blob" },
+      );
+
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = "document.docx";
+      link.click();
+    } catch (err) {
+      console.log(err);
+      alert("Word export failed");
     }
   };
 
@@ -191,17 +216,6 @@ const Editor = () => {
       };
     });
   };
-  const getSectionStyle = (sec) => {
-    return {
-      fontSize: `${sec.font_size || 14}px`,
-      fontWeight: sec.font_weight || "normal",
-      textAlign: sec.text_align || "left",
-      lineHeight: sec.line_height || 1.5,
-      marginTop: `${sec.margin_top || 10}px`,
-      marginBottom: `${sec.margin_bottom || 10}px`,
-      paddingLeft: `${sec.padding_left || 0}px`,
-    };
-  };
   const paginateSections = (sectionsList) => {
     const pages = [];
     let currentPage = [];
@@ -227,89 +241,111 @@ const Editor = () => {
 
     return pages;
   };
-  if (!template) return <p>Loading...</p>;
+
+  if (!template)
+    return (
+      <div className="editor-loading">
+        <div className="loader"></div>
+        <p>Preparing Workspace...</p>
+      </div>
+    );
 
   const numberedSections = generateNumbering(template.sections);
   const pages = paginateSections(numberedSections);
 
   return (
-    <div className="editor">
+    <div className="editor-workspace">
       {previewHTML && (
         <div className="preview-overlay">
-          <button onClick={() => setPreviewHTML("")}>Close Preview</button>
-
-          <iframe
-            title="preview"
-            srcDoc={previewHTML}
-            className="preview-frame"
-          />
+          <div className="preview-modal">
+            <div className="preview-header">
+              <h3>Document Preview</h3>
+              <button
+                className="close-preview"
+                onClick={() => setPreviewHTML("")}
+              >
+                <FiX size={24} />
+              </button>
+            </div>
+            <iframe
+              title="preview"
+              srcDoc={previewHTML}
+              className="preview-frame"
+            />
+          </div>
         </div>
       )}
-      {/* HEADER */}
-      <div className="editor-header">
-        <h1>{template.name}</h1>
 
-        <div>
+      {/* STICKY TOOLBAR */}
+      <div className="editor-toolbar">
+        <div className="toolbar-left">
+          <div className="doc-icon-circle">
+            <FiFileText />
+          </div>
+          <div className="title-group">
+            <span className="template-label">Template Editor</span>
+            <h1>{template.name}</h1>
+          </div>
+        </div>
+
+        <div className="toolbar-actions">
           <button
             onClick={saveAll}
-            className={saving ? "saving-pulse" : ""}
+            className={`btn-save ${saving ? "saving-pulse" : ""}`}
             disabled={saving}
           >
-            {saving ? "Saving..." : "Save"}
+            <FiSave /> {saving ? "Saving..." : "Save"}
+          </button>
+          <button onClick={handlePreview} className="btn-secondary">
+            <FiEye /> Preview
           </button>
 
-          <button onClick={handlePreview}>Preview</button>
+          <div className="divider"></div>
 
-          <button onClick={handleExport}>Export PDF</button>
-
-          <button
-            onClick={() =>
-              window.open(`http://localhost:5000/api/export/word/${documentId}`)
-            }
-          >
-            Export Word
+          <button onClick={handleExport} className="btn-export">
+            <FiDownload /> PDF
+          </button>
+          <button onClick={handleExportWord} className="btn-export">
+            <BiSolidFileDoc /> Word
           </button>
         </div>
       </div>
 
-      {/* EDIT MODE */}
-      {pages.map((page, pageIndex) => (
-        <div key={pageIndex} className="page">
-          {page.map((sec) => (
-            <div key={sec.id} className="section">
-              <h2
-                className={`level-${sec.level}`}
-                style={{
-                  height: "fit-content",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  padding: 0,
-                }}
-              >
-                {sec.number}.{" "}
-                <input
-                  value={sections[sec.id]?.title || sec.title}
-                  onChange={(e) => handleTitleChange(sec.id, e.target.value)}
-                  className="editor-title"
-                />
-              </h2>
+      {/* DOCUMENT AREA */}
+      <div className="document-scroller">
+        {pages.map((page, pageIndex) => (
+          <div key={pageIndex} className="page">
+            {page.map((sec) => (
+              <div key={sec.id} className="section-block">
+                <div className={`section-header level-${sec.level}`}>
+                  <span className="section-number">{sec.number}</span>
+                  <input
+                    value={sections[sec.id]?.title || sec.title}
+                    onChange={(e) => handleTitleChange(sec.id, e.target.value)}
+                    className="editor-title-input"
+                  />
+                </div>
 
-              <textarea
-                placeholder="Type here..."
-                value={sections[sec.id]?.content || ""}
-                onChange={(e) => handleContentChange(sec.id, e.target.value)}
-                className={`editor-input ${errors[sec.id] ? "error" : ""}`}
-                rows={1}
-                onInput={(e) => {
-                  e.target.style.height = "auto";
-                  e.target.style.height = e.target.scrollHeight + "px";
-                }}
-              />
-            </div>
-          ))}
-        </div>
-      ))}
+                <textarea
+                  placeholder="Start typing your content here..."
+                  value={sections[sec.id]?.content || ""}
+                  onChange={(e) => handleContentChange(sec.id, e.target.value)}
+                  className={`editor-input ${errors[sec.id] ? "input-error" : ""}`}
+                  rows={1}
+                  onInput={(e) => {
+                    e.target.style.height = "auto";
+                    e.target.style.height = e.target.scrollHeight + "px";
+                  }}
+                />
+                {errors[sec.id] && (
+                  <span className="error-text">{errors[sec.id]}</span>
+                )}
+              </div>
+            ))}
+            <div className="page-footer">Page {pageIndex + 1}</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

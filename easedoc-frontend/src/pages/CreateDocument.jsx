@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../api/axios";
-import "./UserDashboard.css";
+import "./CreateDocument.css";
 import { useNavigate } from "react-router-dom";
 
 const UserDashboard = () => {
@@ -114,7 +114,6 @@ const UserDashboard = () => {
           )}
         </div>
       )}
-
       {selectedStandard && (
         <div className="card">
           <h2>Available Templates</h2>

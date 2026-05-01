@@ -1,0 +1,97 @@
+.top-header {
+    height: 80px;
+    padding: 0 2.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: transparent;
+}
+
+.welcome-section h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+}
+
+/* Theme Toggle Capsule Styles */
+.theme-capsule {
+    width: 55px;
+    height: 28px;
+    background-color: #cbd5e1;
+    border-radius: 20px;
+    position: relative;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 6px;
+}
+
+[data-theme="dark"] .theme-capsule {
+    background-color: var(--primary);
+}
+
+.toggle-icon {
+    font-size: 14px;
+    color: white;
+    z-index: 1;
+    opacity: 0.5;
+}
+
+.toggle-icon.visible {
+    opacity: 1;
+}
+
+.capsule-dot {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    background-color: white;
+    border-radius: 50%;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.capsule-dot.left {
+    left: 3px;
+}
+
+.capsule-dot.right {
+    left: 30px;
+}
+
+/* Profile Capsule Styles */
+.user-profile-capsule {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background-color: var(--bg-card);
+    padding: 5px 15px 5px 5px;
+    border-radius: 30px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+}
+
+.user-profile-capsule .avator {
+    text-align: center;
+    align-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background-color: #7ebfb5;
+    color: #fff;
+    font-weight: bold;
+}
+
+.user-display-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-main);
+}

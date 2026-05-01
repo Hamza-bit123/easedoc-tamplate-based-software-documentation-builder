@@ -7,6 +7,6 @@ import {
 const router = express.Router();
 
 router.post("/pdf", exportPDFController);
-router.get("/word/:id", exportWordController);
+router.post("/word", exportWordController);
 
 export default router;

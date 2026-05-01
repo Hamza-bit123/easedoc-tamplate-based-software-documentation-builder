@@ -26,7 +26,7 @@ export const createTemplate = (data, callback) => {
       data.name,
       data.description,
       data.document_type_id,
-      data.standard_id, // ✅ ADD THIS
+      data.standard_id,
       data.created_by,
       data.active,
       data.default_font_family,
@@ -94,13 +94,13 @@ export const addTemplateSections = (sections, callback) => {
 };
 
 export const getTemplatesByType = (typeId, standardId, callback) => {
-  const sql = `
+  let sql = `
     SELECT * FROM templates
     WHERE document_type_id = ?
-    AND standard_id = ?
     AND active = 1
   `;
 
+  standardId !== "all" ? (sql += " AND standard_id = ?") : (sql += "");
   db.query(sql, [typeId, standardId], callback);
 };
 
