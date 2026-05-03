@@ -19,3 +19,7 @@
     /* Support for scrolling if content is long */
     overflow-y: auto;
 }
+
+.main-container.editor-mode {
+    padding: 0;
+}

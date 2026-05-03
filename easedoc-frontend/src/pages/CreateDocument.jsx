@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import api from "../api/axios";
 import "./CreateDocument.css";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const UserDashboard = () => {
   const [types, setTypes] = useState([]);
@@ -47,9 +48,20 @@ const UserDashboard = () => {
       const documentId = res.data.documentId;
 
       navigate(`/editor/${documentId}`);
+      toast.success("Document created successfully!");
     } catch (err) {
       console.error("CREATE DOC ERROR:", err);
-      alert("Failed to create document");
+      toast.error("Failed to create document.");
+    }
+  };
+
+  const customizeTemplate = async (templateId) => {
+    try {
+      const res = await api.post(`/templates/${templateId}/customize`);
+      toast.success(res.data.message);
+      navigate("/user/templates");
+    } catch (err) {
+      toast.error("Failed to customize template.");
     }
   };
 
@@ -127,9 +139,21 @@ const UserDashboard = () => {
                   <h3>{t.name}</h3>
                   <p>{t.description}</p>
 
-                  <button className="btn" onClick={() => use_template(t.id)}>
-                    Use Template
-                  </button>
+                  <div className="template-actions">
+                    <button className="btn" onClick={() => use_template(t.id)}>
+                      Use Template
+                    </button>
+                    <button 
+                      className="btn-outline" 
+                      onClick={() => {
+                        if (window.confirm("WARNING: Customizing this template will create a private copy for you. If the administrator deletes the base template, your customized version will also be deleted cascadingly. Do you want to proceed?")) {
+                          customizeTemplate(t.id);
+                        }
+                      }}
+                    >
+                      Customize
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

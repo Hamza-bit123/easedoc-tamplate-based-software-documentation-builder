@@ -40,80 +40,194 @@ export const createTemplate = (data, callback) => {
   );
 };
 
-// INSERT SECTIONS
-export const addTemplateSections = (sections, callback) => {
-  const sql = `
-    INSERT INTO template_sections (
-      template_id,
-      title,
-      section_order,
-      level,
-      is_required,
+// ===== CREATE VERSION =====
+export const createTemplateVersion = (data) => {
+  return new Promise((resolve, reject) => {
+    const sql = `
+      INSERT INTO template_versions (
+        template_id,
+        version_number,
+        is_active,
+        default_font_family,
+        default_line_height,
+        page_margin_top,
+        page_margin_bottom,
+        page_margin_left,
+        page_margin_right
+      ) VALUES (?, ?, true, ?, ?, ?, ?, ?, ?)
+    `;
 
-      title_font_size,
-      title_font_weight,
-      title_text_align,
+    db.query(
+      sql,
+      [
+        data.template_id,
+        data.version_number,
+        data.default_font_family,
+        data.default_line_height,
+        data.page_margin_top,
+        data.page_margin_bottom,
+        data.page_margin_left,
+        data.page_margin_right,
+      ],
+      (err, result) => {
+        if (err) return reject(err);
+        resolve(result.insertId);
+      },
+    );
+  });
+};
 
-      body_font_size,
-      body_font_weight,
-      body_text_align,
+export const insertTemplateSectionVersions = (versionId, sections) => {
+  return new Promise((resolve, reject) => {
+    const sql = `
+      INSERT INTO template_section_versions (
+        template_version_id,
+        title,
+        level,
+        is_required,
 
-      line_height,
-      list_type,
+        title_font_size,
+        title_font_weight,
+        title_text_align,
 
-      margin_top,
-      margin_bottom,
-      padding_left
-    ) VALUES ?
-  `;
+        body_font_size,
+        body_font_weight,
+        body_text_align,
 
-  const values = sections.map((s) => [
-    s.template_id,
-    s.title,
-    s.section_order,
-    s.level,
-    s.is_required,
+        line_height,
+        list_type,
 
-    s.title_font_size,
-    s.title_font_weight,
-    s.title_text_align,
+        margin_top,
+        margin_bottom,
+        padding_left,
 
-    s.body_font_size,
-    s.body_font_weight,
-    s.body_text_align,
+        section_order
+      ) VALUES ?
+    `;
 
-    s.line_height,
-    s.list_type,
+    const values = sections.map((sec, index) => [
+      versionId,
+      sec.title,
+      sec.level,
+      sec.is_required,
 
-    s.margin_top,
-    s.margin_bottom,
-    s.padding_left,
-  ]);
+      sec.title_font_size,
+      sec.title_font_weight,
+      sec.title_text_align,
 
-  db.query(sql, [values], callback);
+      sec.body_font_size,
+      sec.body_font_weight,
+      sec.body_text_align,
+
+      sec.line_height,
+      sec.list_type,
+
+      sec.margin_top,
+      sec.margin_bottom,
+      sec.padding_left,
+
+      index + 1,
+    ]);
+
+    db.query(sql, [values], (err) => {
+      if (err) return reject(err);
+      resolve();
+    });
+  });
+};
+
+export const deactivateOldVersions = (templateId) => {
+  return new Promise((resolve, reject) => {
+    db.query(
+      `UPDATE template_versions SET is_active = false WHERE template_id = ?`,
+      [templateId],
+      (err) => {
+        if (err) return reject(err);
+        resolve();
+      },
+    );
+  });
+};
+
+export const getActiveVersion = (templateId) => {
+  return new Promise((resolve, reject) => {
+    db.query(
+      `SELECT * FROM template_versions WHERE template_id = ? AND is_active = true LIMIT 1`,
+      [templateId],
+      (err, result) => {
+        if (err) return reject(err);
+        resolve(result[0]);
+      },
+    );
+  });
+};
+
+export const getVersionSections = (versionId) => {
+  return new Promise((resolve, reject) => {
+    db.query(
+      `SELECT * FROM template_section_versions WHERE template_version_id = ? ORDER BY section_order ASC`,
+      [versionId],
+      (err, results) => {
+        if (err) return reject(err);
+        resolve(results);
+      },
+    );
+  });
 };
 
 export const getTemplatesByType = (typeId, standardId, callback) => {
   let sql = `
-    SELECT * FROM templates
-    WHERE document_type_id = ?
-    AND active = 1
+    SELECT 
+      t.id, 
+      t.name, 
+      t.description, 
+      t.created_at,
+      s.name as standard_name,
+      v.version_number as version,
+      COALESCE(v.created_at, t.created_at) as updated_at
+    FROM templates t
+    LEFT JOIN standards s ON t.standard_id = s.id
+    LEFT JOIN template_versions v ON t.id = v.template_id AND v.is_active = 1
+    WHERE t.document_type_id = ? AND t.active = 1
   `;
 
-  standardId !== "all" ? (sql += " AND standard_id = ?") : (sql += "");
-  db.query(sql, [typeId, standardId], callback);
+  const params = [typeId];
+  if (standardId !== "all") {
+    sql += " AND t.standard_id = ?";
+    params.push(standardId);
+  }
+  
+  db.query(sql, params, callback);
 };
 
 export const getTemplateById = (id, callback) => {
   db.query("SELECT * FROM templates WHERE id = ?", [id], callback);
 };
 
-export const getTemplateSections = (templateId, callback) => {
-  const sql = `
-    SELECT *
-    FROM template_sections
-    WHERE template_id = ?
-    ORDER BY section_order ASC
-  `;
-  db.query(sql, [templateId], callback);
+export const updateTemplateModel = (templateId, template) => {
+  return new Promise((resolve, reject) => {
+    const sql = `
+      UPDATE templates
+      SET name = ?, description = ?, default_font_family = ?,
+          page_margin_top = ?, page_margin_bottom = ?,
+          page_margin_left = ?, page_margin_right = ?
+      WHERE id = ?
+    `;
+
+    const values = [
+      template.name,
+      template.description,
+      template.default_font_family,
+      template.page_margin_top,
+      template.page_margin_bottom,
+      template.page_margin_left,
+      template.page_margin_right,
+      templateId,
+    ];
+
+    db.query(sql, values, (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
+  });
 };

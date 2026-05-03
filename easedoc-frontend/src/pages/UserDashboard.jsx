@@ -1,221 +1,133 @@
-// import { useState, useEffect } from "react";
-// import api from "../api/axios";
-// import "./UserDashboard.css";
-// import { useNavigate } from "react-router-dom";
-
-// const UserDashboard = () => {
-//   const [types, setTypes] = useState([]);
-//   const [selectedType, setSelectedType] = useState(null);
-//   const [standards, setStandards] = useState([]);
-//   const [selectedStandard, setSelectedStandard] = useState(null);
-//   const [templates, setTemplates] = useState([]);
-//   const navigate = useNavigate();
-
-//   // fetch standards
-//   const fetchStandards = async (typeId) => {
-//     try {
-//       const res = await api.get(`/standards/type/${typeId}`);
-//       setStandards(res.data);
-//       setTemplates([]);
-//       setSelectedStandard(null);
-//     } catch (err) {
-//       console.error(err);
-//       setStandards([]);
-//     }
-//   };
-
-//   // fetch templates
-//   const fetchTemplates = async (typeId, standardId) => {
-//     try {
-//       const res = await api.get(
-//         `/templates/type/${typeId}?standard_id=${standardId}`,
-//       );
-//       setTemplates(res.data);
-//     } catch (err) {
-//       console.error(err);
-//       setTemplates([]);
-//     }
-//   };
-
-//   const use_template = async (templateId) => {
-//     try {
-//       const res = await api.post("/documents", {
-//         template_id: templateId,
-//         title: "New Document",
-//       });
-
-//       const documentId = res.data.documentId;
-
-//       navigate(`/editor/${documentId}`);
-//     } catch (err) {
-//       console.error("CREATE DOC ERROR:", err);
-//       alert("Failed to create document");
-//     }
-//   };
-
-//   useEffect(() => {
-//     const fetchTypes = async () => {
-//       try {
-//         const res = await api.get("/document-types");
-//         setTypes(res.data);
-//       } catch (err) {
-//         console.error(err);
-//       }
-//     };
-
-//     fetchTypes();
-//   }, []);
-
-//   return (
-//     <div className="dashboard">
-//       <h1>Start New Document</h1>
-
-//       <div className="card">
-//         <h2>Select Document Type</h2>
-
-//         <div className="grid">
-//           {types.map((t) => (
-//             <div
-//               key={t.id}
-//               className={`box ${selectedType === t.id ? "active" : ""}`}
-//               onClick={() => {
-//                 setSelectedType(t.id);
-//                 fetchStandards(t.id);
-//               }}
-//             >
-//               {t.name}
-//             </div>
-//           ))}
-//         </div>
-//       </div>
-
-//       {selectedType && (
-//         <div className="card">
-//           <h2>Select Standard</h2>
-
-//           {standards.length === 0 ? (
-//             <p className="empty">No standards available</p>
-//           ) : (
-//             <div className="grid">
-//               {standards.map((s) => (
-//                 <div
-//                   key={s.id}
-//                   className={`box ${selectedStandard === s.id ? "active" : ""}`}
-//                   onClick={() => {
-//                     setSelectedStandard(s.id);
-//                     fetchTemplates(selectedType, s.id);
-//                   }}
-//                 >
-//                   <h3>{s.name}</h3>
-//                   <p>{s.description}</p>
-//                 </div>
-//               ))}
-//             </div>
-//           )}
-//         </div>
-//       )}
-
-//       {selectedStandard && (
-//         <div className="card">
-//           <h2>Available Templates</h2>
-
-//           {templates.length === 0 ? (
-//             <p className="empty">No templates found</p>
-//           ) : (
-//             <div className="grid">
-//               {templates.map((t) => (
-//                 <div key={t.id} className="template-card">
-//                   <h3>{t.name}</h3>
-//                   <p>{t.description}</p>
-
-//                   <button className="btn" onClick={() => use_template(t.id)}>
-//                     Use Template
-//                   </button>
-//                 </div>
-//               ))}
-//             </div>
-//           )}
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default UserDashboard;
-
-// import { useEffect, useState } from "react";
-// import { useNavigate } from "react-router-dom";
-// import api from "../api/axios";
-// import "./UserDashboard.css";
-
-// const UserDashboard = () => {
-//   const navigate = useNavigate();
-
-//   const [documents, setDocuments] = useState([]);
-//   const [loadingDocs, setLoadingDocs] = useState(true);
-
-//   useEffect(() => {
-//     loadDocuments();
-//   }, []);
-
-//   const loadDocuments = async () => {
-//     try {
-//       const res = await api.get("/documents/my");
-//       setDocuments(res.data);
-//     } catch (err) {
-//       console.error(err);
-//     } finally {
-//       setLoadingDocs(false);
-//     }
-//   };
-
-//   return (
-//     <div className="dashboard">
-//       <h2>Your Documents</h2>
-
-//       {loadingDocs ? (
-//         <p>Loading...</p>
-//       ) : documents.length === 0 ? (
-//         <p className="empty">No documents yet</p>
-//       ) : (
-//         <div className="doc-list">
-//           {documents.map((doc) => (
-//             <div
-//               key={doc.id}
-//               className="doc-card"
-//               onClick={() => navigate(`/editor/${doc.id}`)}
-//             >
-//               <h3>{doc.title}</h3>
-//               <p>{doc.template_name}</p>
-//               <span>{new Date(doc.created_at).toLocaleDateString()}</span>
-//             </div>
-//           ))}
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default UserDashboard;
-
-import { Link, Outlet } from "react-router-dom";
-import "./UserDashboard.css";
+import React, { useState, useEffect } from "react";
+import api from "../api/axios";
+import { FiFileText, FiCheckCircle, FiEdit2 } from "react-icons/fi";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import "./Dashboard.css";
 
 const UserDashboard = () => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await api.get("/dashboard/user");
+        setData(res.data);
+      } catch (err) {
+        console.error("Failed to fetch user stats", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading) return <div>Loading dashboard...</div>;
+  if (!data) return <div>Failed to load dashboard data.</div>;
+
+  const { stats, recentDocuments, docsByStatus } = data;
+
+  const COLORS = ["#f59e0b", "#10b981"]; // Orange for draft, Green for completed
+
   return (
-    <div className="layout">
-      <aside className="sidenav">
-        <h2>EASEDOC</h2>
+    <div className="dashboard-overview">
+      <h2 style={{ margin: "0 0 10px 0", color: "var(--text-main)" }}>My Overview</h2>
+      
+      {/* STAT CARDS */}
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-icon docs">
+            <FiFileText />
+          </div>
+          <div className="stat-info">
+            <h3>Total Documents</h3>
+            <p>{stats.totalDocuments}</p>
+          </div>
+        </div>
+        
+        <div className="stat-card">
+          <div className="stat-icon users">
+            <FiEdit2 />
+          </div>
+          <div className="stat-info">
+            <h3>Drafts</h3>
+            <p>{stats.draftDocs}</p>
+          </div>
+        </div>
+        
+        <div className="stat-card">
+          <div className="stat-icon templates">
+            <FiCheckCircle />
+          </div>
+          <div className="stat-info">
+            <h3>Completed</h3>
+            <p>{stats.completedDocs}</p>
+          </div>
+        </div>
+      </div>
 
-        <nav>
-          <Link to="/dashboard/documents">My Documents</Link>
-          <Link to="/dashboard/create">New Document</Link>
-        </nav>
-      </aside>
+      <div className="dashboard-row">
+        {/* CHART */}
+        <div className="dashboard-card">
+          <h3>Documents Status</h3>
+          <div style={{ width: "100%", height: 300, minWidth: 0 }}>
+            {docsByStatus && docsByStatus.length > 0 && stats.totalDocuments > 0 ? (
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie
+                    data={docsByStatus}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={5}
+                    dataKey="count"
+                  >
+                    {docsByStatus.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.name.toLowerCase() === 'completed' ? COLORS[1] : COLORS[0]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+                  />
+                  <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <p style={{ color: "#94a3b8", textAlign: "center", paddingTop: "100px" }}>No documents yet</p>
+            )}
+          </div>
+        </div>
 
-      <main className="content">
-        <Outlet />
-      </main>
+        {/* RECENT ACTIVITY */}
+        <div className="dashboard-card">
+          <h3>Recent Documents</h3>
+          <div className="recent-activity-list">
+            {recentDocuments && recentDocuments.length > 0 ? (
+              recentDocuments.map((doc) => (
+                <div className="activity-item" key={doc.id}>
+                  <div className="activity-info">
+                    <h4>{doc.title}</h4>
+                    <p>{doc.template_name}</p>
+                  </div>
+                  <div className={`activity-status status-${doc.status?.toLowerCase() || 'draft'}`}>
+                    {doc.status || "DRAFT"}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p style={{ color: "#94a3b8" }}>No recent documents</p>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

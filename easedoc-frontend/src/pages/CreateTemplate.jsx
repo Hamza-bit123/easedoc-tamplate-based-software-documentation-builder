@@ -1,8 +1,11 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import "./CreateTemplate.css";
 import api from "../api/axios";
+import { useParams, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const CreateTemplate = () => {
+  const navigate = useNavigate();
   const [template, setTemplate] = useState({
     name: "",
     description: "",
@@ -16,6 +19,10 @@ const CreateTemplate = () => {
     page_margin_left: 20,
     page_margin_right: 20,
   });
+
+  const { id } = useParams();
+
+  const isEdit = !!id;
 
   const [errors, setErrors] = useState({});
 
@@ -98,22 +105,51 @@ const CreateTemplate = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const createTemplate = async () => {
+  const saveTemplate = async () => {
     if (!validate()) return;
 
     try {
-      await api.post("/templates", {
-        ...template,
-        document_type_id: Number(template.document_type_id),
-        standard_id: Number(template.standard_id),
-        sections,
-      });
+      if (isEdit) {
+        await api.put(`/templates/${id}`, {
+          template,
+          sections,
+        });
 
-      alert("Template created successfully");
+        toast.success("Template updated successfully");
+        navigate("/admin/templates");
+      } else {
+        await api.post("/templates", {
+          ...template,
+          document_type_id: Number(template.document_type_id),
+          standard_id: Number(template.standard_id),
+          sections,
+        });
+
+        toast.success("Template created successfully");
+        navigate("/admin/templates");
+      }
     } catch (err) {
-      console.error(err);
+      console.error(err.response?.data);
+      toast.error(err.response?.data?.message || "Failed to save template.");
     }
   };
+
+  //   const createTemplate = async () => {
+  //     if (!validate()) return;
+
+  //     try {
+  //       await api.post("/templates", {
+  //         ...template,
+  //         document_type_id: Number(template.document_type_id),
+  //         standard_id: Number(template.standard_id),
+  //         sections,
+  //       });
+
+  //       alert("Template created successfully");
+  //     } catch (err) {
+  //       console.error(err);
+  //     }
+  //   };
 
   const handleDocTypeChange = async (value) => {
     setTemplate({ ...template, document_type_id: value, standard_id: "" });
@@ -125,6 +161,39 @@ const CreateTemplate = () => {
       console.error(err);
     }
   };
+
+  useEffect(() => {
+    if (!isEdit) return;
+
+    const fetchTemplate = async () => {
+      try {
+        const res = await api.get(`/templates/${id}/full`);
+
+        const data = res.data;
+
+        setTemplate({
+          name: data.name,
+          description: data.description,
+          document_type_id: data.document_type_id,
+          standard_id: data.standard_id,
+          active: data.active,
+          default_font_family: data.default_font_family,
+          default_line_height: data.default_line_height,
+          page_margin_top: data.page_margin_top,
+          page_margin_bottom: data.page_margin_bottom,
+          page_margin_left: data.page_margin_left,
+          page_margin_right: data.page_margin_right,
+        });
+
+        setSections(data.sections);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchTemplate();
+  }, [id]);
+
   return (
     <div className="container">
       <h1>Create Template</h1>
@@ -417,8 +486,8 @@ const CreateTemplate = () => {
         </button>
       </div>
 
-      <button className="btn primary" onClick={createTemplate}>
-        Save Template
+      <button className="btn primary" onClick={saveTemplate}>
+        {isEdit ? "Create New Version" : "Save Template"}
       </button>
     </div>
   );

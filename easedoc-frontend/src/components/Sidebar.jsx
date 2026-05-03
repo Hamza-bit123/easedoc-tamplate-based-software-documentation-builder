@@ -5,7 +5,7 @@ import {
   MdOutlineLayers,
   MdOutlinePostAdd,
 } from "react-icons/md";
-import { FiUsers, FiSettings, FiFileText } from "react-icons/fi";
+import { FiUsers, FiSettings, FiFileText, FiLogOut } from "react-icons/fi";
 import { HiOutlineSparkles } from "react-icons/hi2";
 import "./sidebar.css";
 import { AuthContext } from "../context/AuthContext";
@@ -86,15 +86,15 @@ const Sidebar = () => {
               <span>{item.label}</span>
             </NavLink>
           ))}
-          <Link
-            onClick={() => {
-              logout();
-            }}
-          >
-            LogOut
-          </Link>
         </div>
       </nav>
+
+      <div className="sidebar-footer">
+        <button className="nav-item logout-btn" onClick={() => logout()}>
+          <span className="icon"><FiLogOut size={22} /></span>
+          <span>Log Out</span>
+        </button>
+      </div>
     </aside>
   );
 };

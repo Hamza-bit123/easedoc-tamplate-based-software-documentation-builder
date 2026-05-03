@@ -6,6 +6,7 @@ import generatePrintHTML from "../utils/generatePrintHTML";
 import { FiSave, FiEye, FiDownload, FiFileText, FiX } from "react-icons/fi";
 import { BiSolidFileDoc } from "react-icons/bi";
 import "./Editor.css";
+import toast from "react-hot-toast";
 
 const Editor = () => {
   const { documentId } = useParams();
@@ -15,6 +16,7 @@ const Editor = () => {
   const [errors, setErrors] = useState({});
   const [previewHTML, setPreviewHTML] = useState("");
   const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState("draft");
   const PAGE_HEIGHT = 1122; // px (~A4)
 
   // ================= LOAD =================
@@ -32,7 +34,12 @@ const Editor = () => {
   const loadEditor = async () => {
     try {
       const doc = await api.get(`/documents/${documentId}`);
-      const temp = await api.get(`/templates/${doc.data.template_id}/full`);
+      
+      const endpoint = doc.data.template_version_id 
+        ? `/templates/${doc.data.template_id}/version/${doc.data.template_version_id}/full`
+        : `/templates/${doc.data.template_id}/full`;
+        
+      const temp = await api.get(endpoint);
       const sec = await api.get(`/document-sections/${documentId}`);
 
       let map = {};
@@ -45,9 +52,10 @@ const Editor = () => {
 
       setTemplate(temp.data);
       setSections(map);
+      setStatus(doc.data.status || "draft");
     } catch (err) {
       console.log(err);
-      alert("Failed to load editor");
+      toast.error("Failed to load editor");
     }
   };
 
@@ -85,11 +93,12 @@ const Editor = () => {
         });
       }
 
+      toast.success("All changes saved!");
       setSaving(false);
     } catch (err) {
       setSaving(false);
       console.log(err);
-      alert("Save failed");
+      toast.error("Save failed");
     }
   };
 
@@ -123,7 +132,7 @@ const Editor = () => {
 
       return Object.keys(errMap).length === 0;
     } catch {
-      alert("Validation failed");
+      toast.error("Validation failed");
       return false;
     }
   };
@@ -165,7 +174,7 @@ const Editor = () => {
       link.click();
     } catch (err) {
       console.log(err);
-      alert("Export failed");
+      toast.error("Export failed");
     }
   };
 
@@ -187,7 +196,7 @@ const Editor = () => {
       link.click();
     } catch (err) {
       console.log(err);
-      alert("Word export failed");
+      toast.error("Word export failed");
     }
   };
 
@@ -301,6 +310,27 @@ const Editor = () => {
           </button>
 
           <div className="divider"></div>
+
+          <button 
+            onClick={async () => {
+              const newStatus = status === "completed" ? "draft" : "completed";
+              if (newStatus === "completed") {
+                const isValid = await validate();
+                if (!isValid) return; // Prevent completion if validation fails
+              }
+              try {
+                await api.put(`/documents/${documentId}/status`, { status: newStatus });
+                setStatus(newStatus);
+                toast.success(`Document marked as ${newStatus}`);
+              } catch(err) {
+                toast.error("Failed to update status");
+              }
+            }} 
+            className="btn-secondary"
+            style={status === "completed" ? { background: '#10b981', color: 'white', borderColor: '#10b981' } : {}}
+          >
+            {status === "completed" ? "Completed" : "Mark as Completed"}
+          </button>
 
           <button onClick={handleExport} className="btn-export">
             <FiDownload /> PDF

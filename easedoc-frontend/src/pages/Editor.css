@@ -134,9 +134,8 @@
 }
 
 [data-theme="dark"] .page {
-    background: #ffffff;
-    /* Pages stay white for better text contrast/printing feel */
-    color: #334155;
+    background: var(--bg-card);
+    color: var(--text-main);
 }
 
 .page-footer {
@@ -178,6 +177,10 @@
     border-bottom: 1px solid transparent;
 }
 
+[data-theme="dark"] .editor-title-input {
+    color: var(--text-main);
+}
+
 .editor-title-input:focus {
     border-bottom: 1px solid var(--secondary);
 }
@@ -201,6 +204,10 @@
     color: #334155;
     padding: 10px 0;
     font-family: inherit;
+}
+
+[data-theme="dark"] .editor-input {
+    color: var(--text-main);
 }
 
 .input-error {

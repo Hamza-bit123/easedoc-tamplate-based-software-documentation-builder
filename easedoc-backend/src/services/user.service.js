@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { createUser, findUserByEmail } from "../models/user.model.js";
 import jwt from "jsonwebtoken";
+import db from "../config/db.js";
 
 export const registerUser = async (userData) => {
   return new Promise((resolve, reject) => {
@@ -63,6 +64,33 @@ export const loginUser = (userData) => {
           role: user.role,
         },
       });
+    });
+  });
+};
+
+export const getAllUsersService = () => {
+  return new Promise((resolve, reject) => {
+    db.query("SELECT id, fullName, email, role, created_at FROM users ORDER BY created_at DESC", (err, results) => {
+      if (err) return reject(err);
+      resolve(results);
+    });
+  });
+};
+
+export const updateUserRoleService = (userId, role) => {
+  return new Promise((resolve, reject) => {
+    db.query("UPDATE users SET role = ? WHERE id = ?", [role, userId], (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
+  });
+};
+
+export const deleteUserService = (userId) => {
+  return new Promise((resolve, reject) => {
+    db.query("DELETE FROM users WHERE id = ?", [userId], (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
     });
   });
 };

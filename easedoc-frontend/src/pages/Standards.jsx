@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
 import api from "../api/axios";
+import toast from "react-hot-toast";
 
 const Standards = () => {
   const { typeId } = useParams();
@@ -32,8 +33,10 @@ const Standards = () => {
       });
 
       navigate(`/editor/${res.data.documentId}`);
-    } catch {
-      alert("Failed to create document");
+      toast.success("Document created successfully!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to create document.");
     }
   };
 

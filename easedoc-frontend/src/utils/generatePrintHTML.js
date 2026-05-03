@@ -39,6 +39,7 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
       width: 210mm;
       height: 297mm;
       background: white;
+      color: black;
       margin: 20px 0;
       box-shadow: 0 0 10px rgba(0,0,0,0.2);
       box-sizing: border-box;

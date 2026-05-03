@@ -11,6 +11,7 @@ import documentTypeRoutes from "./routes/documentType.routes.js";
 import documentSectionRoutes from "./routes/documentSection.routes.js";
 import documentRoutes from "./routes/document.routes.js";
 import exportRoutes from "./routes/export.routes.js";
+import dashboardRoutes from "./routes/dashboard.routes.js";
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use("/api/document-types", documentTypeRoutes);
 app.use("/api/document-sections", documentSectionRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/export", exportRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

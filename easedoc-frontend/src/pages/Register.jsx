@@ -84,6 +84,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api/axios";
 import "./Auth.css"; // Import the CSS file
+import toast from "react-hot-toast";
 
 const Register = () => {
   const [form, setForm] = useState({
@@ -108,10 +109,12 @@ const Register = () => {
 
     try {
       await api.post("/users/register", form);
-      // Optional: Replace alert with a nicer UI notification if desired
+      toast.success("Account created! Please login.");
       navigate("/login");
     } catch (err) {
-      setError(err.response?.data?.message || "Registration failed");
+      const msg = err.response?.data?.message || "Registration failed";
+      setError(msg);
+      toast.error(msg);
     }
   };
 

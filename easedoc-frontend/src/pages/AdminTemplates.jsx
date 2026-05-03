@@ -2,10 +2,11 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import "./AdminTemplates.css";
-import { FiFileText, FiLayers } from "react-icons/fi";
+import { FiFileText, FiLayers, FiAlertTriangle, FiX } from "react-icons/fi";
 import { FaServer } from "react-icons/fa";
 import { BiEdit, BiPlus } from "react-icons/bi";
 import { BsEye, BsTrash2 } from "react-icons/bs";
+import toast from "react-hot-toast";
 
 const DOC_TYPES = [
   {
@@ -39,6 +40,12 @@ const AdminTemplates = () => {
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Deletion State
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingTemplate, setDeletingTemplate] = useState(null);
+  const [usageInfo, setUsageInfo] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   // 1. Fetch Templates Logic
   const fetchTemplates = useCallback(async (typeId, standardId) => {
     setLoading(true);
@@ -49,6 +56,7 @@ const AdminTemplates = () => {
       setTemplates(res.data);
     } catch (err) {
       console.error("Error fetching templates:", err);
+      toast.error("Failed to load templates.");
       setTemplates([]);
     } finally {
       setLoading(false);
@@ -64,6 +72,7 @@ const AdminTemplates = () => {
       fetchTemplates(value, "all");
     } catch (err) {
       console.error(err);
+      toast.error("Failed to load standards.");
     }
   };
 
@@ -76,6 +85,36 @@ const AdminTemplates = () => {
   useEffect(() => {
     handleDocTypeChange(1);
   }, []);
+
+  // Delete Handlers
+  const openDeleteModal = async (template) => {
+    setDeletingTemplate(template);
+    setDeleteLoading(true);
+    setShowDeleteModal(true);
+    try {
+      const res = await api.get(`/templates/${template.id}/usage`);
+      setUsageInfo(res.data);
+    } catch (err) {
+      toast.error("Failed to fetch usage info.");
+      setShowDeleteModal(false);
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    setDeleteLoading(true);
+    try {
+      const res = await api.delete(`/templates/${deletingTemplate.id}`);
+      toast.success(res.data.message);
+      setShowDeleteModal(false);
+      fetchTemplates(templateFilter.document_type_id, templateFilter.standard_id);
+    } catch (err) {
+      toast.error("Deletion failed.");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
 
   return (
     <div className="admin-templates-page">
@@ -146,7 +185,7 @@ const AdminTemplates = () => {
                     <th>Template Name</th>
                     <th>Standard</th>
                     <th>Version</th>
-                    <th>Created At</th>
+                    <th>Updated At</th>
                     <th className="text-right">Actions</th>
                   </tr>
                 </thead>
@@ -157,19 +196,33 @@ const AdminTemplates = () => {
                         <td className="font-medium">{t.name}</td>
                         <td>
                           <span className="badge">
-                            {t.standard_id || "N/A"}
+                            {t.standard_name || "N/A"}
                           </span>
                         </td>
                         <td>v{t.version || "1.0"}</td>
-                        <td>{new Date(t.created_at).toLocaleDateString()}</td>
+                        <td>{new Date(t.updated_at).toLocaleDateString()}</td>
                         <td className="action-buttons">
-                          <button className="icon-btn view" title="Preview">
+                          <button
+                            className="icon-btn view"
+                            title="View Details"
+                            onClick={() => navigate(`/admin/templates/details/${t.id}`)}
+                          >
                             <BsEye size={16} />
                           </button>
-                          <button className="icon-btn edit" title="Edit">
+                          <button
+                            className="icon-btn edit"
+                            title="Edit"
+                            onClick={() => {
+                              navigate(`/admin/templates/edit/${t.id}`);
+                            }}
+                          >
                             <BiEdit size={16} />
                           </button>
-                          <button className="icon-btn delete" title="Delete">
+                          <button 
+                            className="icon-btn delete" 
+                            title="Delete"
+                            onClick={() => openDeleteModal(t)}
+                          >
                             <BsTrash2 size={16} />
                           </button>
                         </td>
@@ -188,6 +241,67 @@ const AdminTemplates = () => {
           )}
         </section>
       </main>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="modal-overlay">
+          <div className="delete-modal">
+            <div className="modal-header">
+              <h3>Confirm Deletion</h3>
+              <button onClick={() => setShowDeleteModal(false)} className="close-btn"><FiX /></button>
+            </div>
+            
+            <div className="modal-body">
+              {deleteLoading && !usageInfo ? (
+                <p>Checking usage...</p>
+              ) : usageInfo ? (
+                <>
+                  <div className="warning-box">
+                    <FiAlertTriangle className="warning-icon" />
+                    <div>
+                      <strong>Warning:</strong> You are about to delete 
+                      {usageInfo.canDeleteTemplate ? " the entire template." : " unused versions."}
+                    </div>
+                  </div>
+
+                  <div className="usage-stats">
+                    <p>Total Versions: <strong>{usageInfo.totalVersions}</strong></p>
+                    <p>Versions in Use: <strong>{usageInfo.usedVersionsCount}</strong></p>
+                    <p>Unused Versions to be Deleted: <strong>{usageInfo.unusedVersions.length}</strong></p>
+                  </div>
+
+                  {usageInfo.usedVersionsCount > 0 && usageInfo.unusedVersions.length > 0 && (
+                    <p className="notice">
+                      Note: {usageInfo.usedVersionsCount} version{usageInfo.usedVersionsCount > 1 ? "s" : ""} cannot be deleted because {usageInfo.usedVersionsCount > 1 ? "they have" : "it has"} been used to create documents.
+                    </p>
+                  )}
+
+                  {usageInfo.usedVersionsCount > 0 && usageInfo.unusedVersions.length === 0 && (
+                    <p className="error-text">No versions can be deleted as all are currently in use.</p>
+                  )}
+                </>
+              ) : null}
+            </div>
+
+            <div className="modal-footer">
+              <button 
+                className="btn-cancel" 
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleteLoading}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn-confirm-delete"
+                onClick={confirmDelete}
+                disabled={deleteLoading || (usageInfo && !usageInfo.canDeleteTemplate && usageInfo.unusedVersions.length === 0)}
+              >
+                {deleteLoading ? "Deleting..." : "Confirm Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

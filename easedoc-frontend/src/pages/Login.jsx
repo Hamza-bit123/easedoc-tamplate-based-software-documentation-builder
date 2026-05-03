@@ -2,6 +2,7 @@ import { useState, useContext } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api/axios";
 import { AuthContext } from "../context/AuthContext";
+import toast from "react-hot-toast";
 import "./Auth.css";
 
 const Login = () => {
@@ -29,9 +30,12 @@ const Login = () => {
       const res = await api.post("/users/login", form);
 
       login(res.data);
+      toast.success("Welcome back!");
       navigate("/");
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed");
+      const msg = err.response?.data?.message || "Login failed";
+      setError(msg);
+      toast.error(msg);
     }
   };
 

@@ -3,6 +3,7 @@ import {
   getDocumentService,
   validateDocumentService,
   getUserDocumentsService,
+  updateDocumentStatusService,
 } from "../services/document.service.js";
 
 export const createDocumentController = async (req, res) => {
@@ -42,11 +43,20 @@ export const validateDocumentController = async (req, res) => {
 
 export const getUserDocumentsController = async (req, res) => {
   try {
-    console.log("req.user.id");
     const docs = await getUserDocumentsService(req.user.id);
-    console.log("user id: " + req.user.id);
     res.json(docs);
   } catch (err) {
     res.status(500).json({ message: "Error fetching documents" });
+  }
+};
+
+export const updateDocumentStatusController = async (req, res) => {
+  try {
+    const { status } = req.body;
+    await updateDocumentStatusService(req.params.id, status);
+    res.json({ message: "Document status updated" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error updating status" });
   }
 };

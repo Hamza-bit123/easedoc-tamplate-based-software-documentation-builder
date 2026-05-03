@@ -2,11 +2,11 @@ import db from "../config/db.js";
 
 export const createDocument = (data, callback) => {
   const sql = `
-    INSERT INTO documents (user_id, template_id, title)
-    VALUES (?, ?, ?)
+    INSERT INTO documents (user_id, template_id, template_version_id, title)
+    VALUES (?, ?, ?, ?)
   `;
 
-  db.query(sql, [data.user_id, data.template_id, data.title], callback);
+  db.query(sql, [data.user_id, data.template_id, data.template_version_id, data.title], callback);
 };
 
 export const getDocumentById = (id, callback) => {
