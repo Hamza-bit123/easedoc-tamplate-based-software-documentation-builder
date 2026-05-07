@@ -1,0 +1,78 @@
+/* Standards.css - Global Consistency */
+
+.standards-page {
+  animation: fadeIn 0.4s ease-out;
+}
+
+.standards-page h2 {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: var(--space-8);
+  letter-spacing: -0.025em;
+}
+
+.standards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-6);
+}
+
+.standard-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-8);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-premium);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.standard-card:hover {
+  transform: translateY(-8px);
+  border-color: var(--primary-light);
+  box-shadow: var(--shadow-lg);
+}
+
+.standard-card h3 {
+  font-size: var(--text-xl);
+  color: var(--text-main);
+  margin: 0;
+  font-weight: 700;
+}
+
+.standard-card p {
+  color: var(--text-muted);
+  font-size: var(--text-base);
+  line-height: 1.6;
+  flex-grow: 1;
+}
+
+.standard-card button {
+  width: 100%;
+  padding: var(--space-3);
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-md);
+}
+
+.standard-card button:hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.no-standards {
+  text-align: center;
+  padding: var(--space-12);
+  color: var(--text-muted);
+  font-size: var(--text-lg);
+  font-weight: 500;
+}

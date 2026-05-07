@@ -43,6 +43,7 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
       margin: 20px 0;
       box-shadow: 0 0 10px rgba(0,0,0,0.2);
       box-sizing: border-box;
+      position: relative;
 
       padding-top: ${template.page_margin_top}mm;
       padding-bottom: ${template.page_margin_bottom}mm;
@@ -51,16 +52,24 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
 
       overflow: hidden;
     }
+    .page-number {
+      position: absolute;
+      bottom: 10mm;
+      right: 15mm;
+      font-size: 10pt;
+      color: #666;
+    }
   `;
 
-  const PAGE_HEIGHT = 1122;
+  const PAGE_HEIGHT = 1122; // A4 height in px at 96dpi
 
   const paddingTop = template.page_margin_top * 3.78;
   const paddingBottom = template.page_margin_bottom * 3.78;
   const paddingLeft = template.page_margin_left * 3.78;
   const paddingRight = template.page_margin_right * 3.78;
 
-  const CONTENT_HEIGHT = isPDF ? PAGE_HEIGHT - 25 : PAGE_HEIGHT;
+  // Use a consistent content height, leaving a bit of buffer for the footer
+  const CONTENT_HEIGHT = PAGE_HEIGHT - 15; 
 
   const addNumbering = (sections) => {
     const counters = {};
@@ -91,10 +100,10 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
   const measure = document.createElement("div");
   measure.style.position = "absolute";
   measure.style.visibility = "hidden";
-  measure.style.width = "794px";
+  measure.style.width = "794px"; // A4 width
   measure.style.boxSizing = "border-box";
   measure.style.fontFamily = template.default_font_family;
-  measure.style.height = `${CONTENT_HEIGHT}px`;
+  // measure.style.height = `${CONTENT_HEIGHT}px`; // Don't fix height for measurement
   measure.style.padding = `${paddingTop}px ${paddingRight}px ${paddingBottom}px ${paddingLeft}px`;
   measure.style.overflow = "hidden";
 
@@ -115,6 +124,7 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
         padding-left:${sec.padding_left + (sec.level - 1) * 20}px;
         margin-top:${sec.margin_top}px;
         margin-bottom:${sec.margin_bottom}px;
+        line-height: 1.2;
       ">
         ${sec.number}. ${title}
       </h2>
@@ -133,6 +143,7 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
         text-align:${sec.body_text_align};
         line-height:${sec.line_height};
         margin-left:${indent}px;
+        margin-bottom: 5px;
       ">
         ${text}
       </li>
@@ -147,6 +158,7 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
       text-align:${sec.body_text_align};
       line-height:${sec.line_height};
       padding-left:${indent}px;
+      margin-top: 0;
       margin-bottom:10px;
     ">
       ${text}
@@ -158,7 +170,9 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
   let currentHTML = "";
 
   const pushPage = () => {
-    pages.push(currentHTML);
+    if (currentHTML.trim()) {
+        pages.push(currentHTML);
+    }
     currentHTML = "";
   };
 
@@ -167,7 +181,7 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
     let fit = "";
 
     for (let i = 0; i < words.length; i++) {
-      const test = fit + words[i] + " ";
+      const test = fit + (fit ? " " : "") + words[i];
       const html = currentHTML + getParaHTML(sec, test);
 
       if (getHeight(html) > CONTENT_HEIGHT) break;
@@ -277,7 +291,14 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
             const { fit, rest } = splitText(sec, remaining);
 
             if (!fit) {
+              // If not even one word fits, we must push page and try again
               pushPage();
+              // To avoid infinite loop if a single word is too long (rare but possible)
+              if (getHeight(getParaHTML(sec, remaining.split(" ")[0])) > CONTENT_HEIGHT) {
+                  // Extremely long word, just force it
+                  currentHTML += getParaHTML(sec, remaining);
+                  remaining = "";
+              }
               continue;
             }
 
@@ -304,10 +325,18 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
 <head>
   <style>
     ${styles}
+    @media print {
+      body { background: white; }
+      .page { margin: 0; box-shadow: none; page-break-after: always; }
+    }
   </style>
 </head>
 <body>
-  ${pages.map((p) => `<div class="page">${p}</div>`).join("")}
+  ${pages.map((p, i) => `
+    <div class="page">
+      ${p}
+      <div class="page-number">Page ${i + 1} of ${pages.length}</div>
+    </div>`).join("")}
 </body>
 </html>`;
 };

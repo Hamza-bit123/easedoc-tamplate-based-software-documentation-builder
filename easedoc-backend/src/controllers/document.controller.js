@@ -18,7 +18,6 @@ export const createDocumentController = async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "Error creating document" });
   }
 };
@@ -56,7 +55,6 @@ export const updateDocumentStatusController = async (req, res) => {
     await updateDocumentStatusService(req.params.id, status);
     res.json({ message: "Document status updated" });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "Error updating status" });
   }
 };

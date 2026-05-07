@@ -40,17 +40,17 @@ const Sidebar = () => {
         icon: <MdOutlineDashboard size={22} />,
       },
       {
-        path: "user/documents",
+        path: "/user/documents",
         label: "My Documents",
         icon: <FiFileText size={22} />,
       },
       {
-        path: "user/templates",
+        path: "/user/templates",
         label: "My Templates",
         icon: <MdOutlineLayers size={22} />,
       },
       {
-        path: "user/documents/create",
+        path: "/user/documents/create",
         label: "Create Document",
         icon: <MdOutlinePostAdd size={24} />,
       },

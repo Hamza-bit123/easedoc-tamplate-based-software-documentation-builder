@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { FiFileText, FiTrash2, FiEdit, FiEye } from "react-icons/fi";
 import toast from "react-hot-toast";
+import { usePopup } from "../context/PopupContext";
 import "./UserTemplates.css";
 
 const UserTemplates = () => {
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { showPopup } = usePopup();
 
   useEffect(() => {
     fetchUserTemplates();
@@ -18,22 +20,29 @@ const UserTemplates = () => {
     try {
       const res = await api.get("/templates/user/customized");
       setTemplates(res.data);
-    } catch (err) {
+    } catch {
       toast.error("Failed to load your templates.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this customized template?")) return;
-    try {
-      await api.delete(`/templates/${id}`);
-      setTemplates(templates.filter(t => t.id !== id));
-      toast.success("Template deleted.");
-    } catch (err) {
-      toast.error("Failed to delete template.");
-    }
+  const handleDelete = (id) => {
+    showPopup({
+      type: 'error',
+      title: 'Delete Template',
+      message: 'Are you sure you want to delete this customized template? This action cannot be undone.',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/templates/${id}`);
+          setTemplates(templates.filter(t => t.id !== id));
+          toast.success("Template deleted.");
+        } catch {
+          toast.error("Failed to delete template.");
+        }
+      }
+    });
   };
 
   if (loading) return <div className="loading-state">Loading your templates...</div>;
@@ -41,8 +50,13 @@ const UserTemplates = () => {
   return (
     <div className="user-templates-page">
       <header className="page-header">
-        <h1>My Customized Templates</h1>
-        <p>Templates you've customized for your specific needs.</p>
+        <div className="header-info">
+          <h1>My Customized Templates</h1>
+          <p>Templates you've customized for your specific needs.</p>
+        </div>
+        <button className="browse-btn" onClick={() => navigate("/user")}>
+          Browse All Templates
+        </button>
       </header>
 
       <div className="templates-grid">
@@ -79,7 +93,7 @@ const UserTemplates = () => {
             <FiFileText size={48} />
             <h3>No Customized Templates</h3>
             <p>You haven't customized any templates yet. Go to the dashboard to start.</p>
-            <button className="btn-primary" onClick={() => navigate("/user")}>
+            <button className="btn btn-primary" onClick={() => navigate("/user")}>
               Go to Dashboard
             </button>
           </div>

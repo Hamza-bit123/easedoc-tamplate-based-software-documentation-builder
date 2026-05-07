@@ -271,79 +271,87 @@ export const deleteTemplateService = async (templateId) => {
 };
 
 export const customizeTemplateService = async (templateId, userId) => {
-  // 1. Get base template
-  const [templateRows] = await db.promise().query("SELECT * FROM templates WHERE id = ?", [templateId]);
-  if (!templateRows.length) throw new Error("Base template not found");
-  const baseTemplate = templateRows[0];
+  try {
+    // 1. Get base template
+    const [templateRows] = await db.promise().query("SELECT * FROM templates WHERE id = ?", [templateId]);
+    if (!templateRows.length) throw new Error("Base template not found");
+    const baseTemplate = templateRows[0];
 
-  // 2. Get active version
-  const [versionRows] = await db.promise().query("SELECT * FROM template_versions WHERE template_id = ? AND is_active = 1", [templateId]);
-  if (!versionRows.length) throw new Error("Base template has no active version");
-  const baseVersion = versionRows[0];
+    // 2. Get active version, fallback to latest if none active
+    let [versionRows] = await db.promise().query("SELECT * FROM template_versions WHERE template_id = ? AND is_active = 1", [templateId]);
+    if (!versionRows.length) {
+      [versionRows] = await db.promise().query("SELECT * FROM template_versions WHERE template_id = ? ORDER BY version_number DESC LIMIT 1", [templateId]);
+    }
+    
+    if (!versionRows.length) throw new Error("Base template has no versions");
+    const baseVersion = versionRows[0];
 
-  // 3. Get sections
-  const [sections] = await db.promise().query("SELECT * FROM template_section_versions WHERE template_version_id = ? ORDER BY section_order ASC", [baseVersion.id]);
+    // 3. Get sections
+    const [sections] = await db.promise().query("SELECT * FROM template_section_versions WHERE template_version_id = ? ORDER BY section_order ASC", [baseVersion.id]);
 
-  // 4. Create new template (copy)
-  const [newTemplateResult] = await db.promise().query(
-    `INSERT INTO templates (name, description, document_type_id, standard_id, created_by, base_template_id, active, 
-      default_font_family, default_line_height, page_margin_top, page_margin_bottom, page_margin_left, page_margin_right)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      `${baseTemplate.name} (Customized)`,
-      baseTemplate.description,
-      baseTemplate.document_type_id,
-      baseTemplate.standard_id,
-      userId,
-      templateId,
-      1,
-      baseTemplate.default_font_family,
-      baseTemplate.default_line_height,
-      baseTemplate.page_margin_top,
-      baseTemplate.page_margin_bottom,
-      baseTemplate.page_margin_left,
-      baseTemplate.page_margin_right
-    ]
-  );
-  const newTemplateId = newTemplateResult.insertId;
-
-  // 5. Create new version
-  const [newVersionResult] = await db.promise().query(
-    `INSERT INTO template_versions (template_id, version_number, is_active, 
-      default_font_family, default_line_height, page_margin_top, page_margin_bottom, page_margin_left, page_margin_right)
-     VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?)`,
-    [
-      newTemplateId,
-      1,
-      baseVersion.default_font_family,
-      baseVersion.default_line_height,
-      baseVersion.page_margin_top,
-      baseVersion.page_margin_bottom,
-      baseVersion.page_margin_left,
-      baseVersion.page_margin_right
-    ]
-  );
-  const newVersionId = newVersionResult.insertId;
-
-  // 6. Copy sections
-  if (sections.length > 0) {
-    const sectionValues = sections.map((s, i) => [
-      newVersionId, s.title, s.level, s.is_required, 
-      s.title_font_size, s.title_font_weight, s.title_text_align,
-      s.body_font_size, s.body_font_weight, s.body_text_align,
-      s.line_height, s.list_type, s.margin_top, s.margin_bottom, s.padding_left, i + 1
-    ]);
-    await db.promise().query(
-      `INSERT INTO template_section_versions (template_version_id, title, level, is_required, 
-        title_font_size, title_font_weight, title_text_align,
-        body_font_size, body_font_weight, body_text_align,
-        line_height, list_type, margin_top, margin_bottom, padding_left, section_order)
-       VALUES ?`,
-      [sectionValues]
+    // 4. Create new template (copy)
+    const [newTemplateResult] = await db.promise().query(
+      `INSERT INTO templates (name, description, document_type_id, standard_id, created_by, base_template_id, active, 
+        default_font_family, default_line_height, page_margin_top, page_margin_bottom, page_margin_left, page_margin_right)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        `${baseTemplate.name} (Customized)`,
+        baseTemplate.description,
+        baseTemplate.document_type_id,
+        baseTemplate.standard_id,
+        userId,
+        templateId,
+        1,
+        baseTemplate.default_font_family,
+        baseTemplate.default_line_height,
+        baseTemplate.page_margin_top,
+        baseTemplate.page_margin_bottom,
+        baseTemplate.page_margin_left,
+        baseTemplate.page_margin_right
+      ]
     );
-  }
+    const newTemplateId = newTemplateResult.insertId;
 
-  return { id: newTemplateId, message: "Template customized successfully." };
+    // 5. Create new version
+    const [newVersionResult] = await db.promise().query(
+      `INSERT INTO template_versions (template_id, version_number, is_active, 
+        default_font_family, default_line_height, page_margin_top, page_margin_bottom, page_margin_left, page_margin_right)
+       VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?)`,
+      [
+        newTemplateId,
+        1,
+        baseVersion.default_font_family,
+        baseVersion.default_line_height,
+        baseVersion.page_margin_top,
+        baseVersion.page_margin_bottom,
+        baseVersion.page_margin_left,
+        baseVersion.page_margin_right
+      ]
+    );
+    const newVersionId = newVersionResult.insertId;
+
+    // 6. Copy sections
+    if (sections.length > 0) {
+      const sectionValues = sections.map((s, i) => [
+        newVersionId, s.title, s.level, s.is_required, 
+        s.title_font_size, s.title_font_weight, s.title_text_align,
+        s.body_font_size, s.body_font_weight, s.body_text_align,
+        s.line_height, s.list_type, s.margin_top, s.margin_bottom, s.padding_left, i + 1
+      ]);
+      await db.promise().query(
+        `INSERT INTO template_section_versions (template_version_id, title, level, is_required, 
+          title_font_size, title_font_weight, title_text_align,
+          body_font_size, body_font_weight, body_text_align,
+          line_height, list_type, margin_top, margin_bottom, padding_left, section_order)
+         VALUES ?`,
+        [sectionValues]
+      );
+    }
+
+    return { id: newTemplateId, message: "Template customized successfully." };
+  } catch (err) {
+    throw err;
+  }
 };
 
 export const getUserCustomizedTemplatesService = async (userId) => {

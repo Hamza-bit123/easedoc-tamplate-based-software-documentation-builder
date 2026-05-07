@@ -233,7 +233,6 @@ export const exportWordService = async (template, sectionsMap, res) => {
 
     res.send(buffer);
   } catch (err) {
-    console.error(err);
     res.status(500).send("Word export failed");
   }
 };

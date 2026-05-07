@@ -17,8 +17,8 @@ const MyDocuments = () => {
     try {
       const res = await api.get("/documents/my");
       setDocs(res.data);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      // Error loading documents
     } finally {
       setLoading(false);
     }
@@ -72,7 +72,7 @@ const MyDocuments = () => {
           <FiFileText size={48} />
           <h3>No documents yet</h3>
           <p>Start your first project by selecting a template.</p>
-          <button className="primary-btn" onClick={() => navigate("/create")}>
+          <button className="get-started-btn" onClick={() => navigate("/user/documents/create")}>
             Get Started
           </button>
         </div>

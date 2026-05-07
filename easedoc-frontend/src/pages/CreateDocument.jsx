@@ -3,14 +3,16 @@ import api from "../api/axios";
 import "./CreateDocument.css";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { usePopup } from "../context/PopupContext";
 
-const UserDashboard = () => {
+const CreateDocument = () => {
   const [types, setTypes] = useState([]);
   const [selectedType, setSelectedType] = useState(null);
   const [standards, setStandards] = useState([]);
   const [selectedStandard, setSelectedStandard] = useState(null);
   const [templates, setTemplates] = useState([]);
   const navigate = useNavigate();
+  const { showPopup } = usePopup();
 
   // fetch standards
   const fetchStandards = async (typeId) => {
@@ -19,8 +21,8 @@ const UserDashboard = () => {
       setStandards(res.data);
       setTemplates([]);
       setSelectedStandard(null);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      // Error handled
       setStandards([]);
     }
   };
@@ -32,8 +34,8 @@ const UserDashboard = () => {
         `/templates/type/${typeId}?standard_id=${standardId}`,
       );
       setTemplates(res.data);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      // Error handled
       setTemplates([]);
     }
   };
@@ -49,20 +51,28 @@ const UserDashboard = () => {
 
       navigate(`/editor/${documentId}`);
       toast.success("Document created successfully!");
-    } catch (err) {
-      console.error("CREATE DOC ERROR:", err);
+    } catch {
+      // Error handled
       toast.error("Failed to create document.");
     }
   };
 
-  const customizeTemplate = async (templateId) => {
-    try {
-      const res = await api.post(`/templates/${templateId}/customize`);
-      toast.success(res.data.message);
-      navigate("/user/templates");
-    } catch (err) {
-      toast.error("Failed to customize template.");
-    }
+  const customizeTemplate = (templateId) => {
+    showPopup({
+      type: 'warning',
+      title: 'Customize Template',
+      message: 'WARNING: Customizing this template will create a private copy for you. If the administrator deletes the base template, your customized version will also be deleted cascadingly. Do you want to proceed?',
+      confirmText: 'Yes, Customize',
+      onConfirm: async () => {
+        try {
+          const res = await api.post(`/templates/${templateId}/customize`);
+          toast.success(res.data.message);
+          navigate("/user/templates");
+        } catch {
+          toast.error("Failed to customize template.");
+        }
+      }
+    });
   };
 
   useEffect(() => {
@@ -70,8 +80,8 @@ const UserDashboard = () => {
       try {
         const res = await api.get("/document-types");
         setTypes(res.data);
-      } catch (err) {
-        console.error(err);
+      } catch {
+      // Error handled
       }
     };
 
@@ -140,16 +150,12 @@ const UserDashboard = () => {
                   <p>{t.description}</p>
 
                   <div className="template-actions">
-                    <button className="btn" onClick={() => use_template(t.id)}>
+                    <button className="btn btn-primary" onClick={() => use_template(t.id)}>
                       Use Template
                     </button>
                     <button 
                       className="btn-outline" 
-                      onClick={() => {
-                        if (window.confirm("WARNING: Customizing this template will create a private copy for you. If the administrator deletes the base template, your customized version will also be deleted cascadingly. Do you want to proceed?")) {
-                          customizeTemplate(t.id);
-                        }
-                      }}
+                      onClick={() => customizeTemplate(t.id)}
                     >
                       Customize
                     </button>
@@ -164,4 +170,4 @@ const UserDashboard = () => {
   );
 };
 
-export default UserDashboard;
+export default CreateDocument;

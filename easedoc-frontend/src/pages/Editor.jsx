@@ -53,8 +53,8 @@ const Editor = () => {
       setTemplate(temp.data);
       setSections(map);
       setStatus(doc.data.status || "draft");
-    } catch (err) {
-      console.log(err);
+    } catch {
+      // Error handled
       toast.error("Failed to load editor");
     }
   };
@@ -95,9 +95,9 @@ const Editor = () => {
 
       toast.success("All changes saved!");
       setSaving(false);
-    } catch (err) {
+    } catch {
       setSaving(false);
-      console.log(err);
+      // Error handled
       toast.error("Save failed");
     }
   };
@@ -172,8 +172,8 @@ const Editor = () => {
       link.href = url;
       link.download = "document.pdf";
       link.click();
-    } catch (err) {
-      console.log(err);
+    } catch {
+      // Error handled
       toast.error("Export failed");
     }
   };
@@ -194,8 +194,8 @@ const Editor = () => {
       link.href = url;
       link.download = "document.docx";
       link.click();
-    } catch (err) {
-      console.log(err);
+    } catch {
+      // Error handled
       toast.error("Word export failed");
     }
   };

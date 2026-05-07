@@ -19,6 +19,5 @@ export const exportWordController = (req, res) => {
     return res.status(400).send("Missing data");
   }
 
-  console.log("hellow");
   exportWordService(template, sections, res);
 };

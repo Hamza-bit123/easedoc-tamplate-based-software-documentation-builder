@@ -18,7 +18,7 @@ export const createTemplateController = async (req, res) => {
       created_by: req.user.id,
     };
 
-    console.log(data);
+
     if (!data.name || !data.document_type_id) {
       return res.status(400).json({
         message: "Missing required fields",
@@ -39,7 +39,6 @@ export const createTemplateController = async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       message: "Failed to create template",
     });
@@ -61,7 +60,6 @@ export const getTemplatesByTypeController = async (req, res) => {
 
     res.json(templates || []);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -74,7 +72,6 @@ export const getTemplateWithSectionsController = async (req, res) => {
 
     res.json(template);
   } catch (err) {
-    console.error(err);
     res.status(404).json({ message: "Template not found" });
   }
 };
@@ -88,7 +85,6 @@ export const getTemplateSpecificVersionController = async (req, res) => {
 
     res.json(template);
   } catch (err) {
-    console.error(err);
     res.status(404).json({ message: "Template version not found" });
   }
 };
@@ -106,7 +102,6 @@ export const updateTemplateController = async (req, res) => {
 
     res.json({ message: "Template updated successfully" });
   } catch (err) {
-    console.error(err);
     res.status(500).send("Update template failed");
   }
 };
@@ -117,7 +112,6 @@ export const getTemplateDetailsController = async (req, res) => {
     const details = await getTemplateDetailsService(templateId);
     res.json(details);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "Failed to load template details" });
   }
 };
@@ -128,7 +122,6 @@ export const getTemplateUsageController = async (req, res) => {
     const usage = await getTemplateUsageService(templateId);
     res.json(usage);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "Failed to fetch template usage info" });
   }
 };
@@ -148,7 +141,6 @@ export const deleteTemplateController = async (req, res) => {
     const result = await deleteTemplateService(templateId);
     res.json(result);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "Failed to delete template/versions" });
   }
 };
@@ -160,7 +152,6 @@ export const customizeTemplateController = async (req, res) => {
     const result = await customizeTemplateService(templateId, userId);
     res.json(result);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "Failed to customize template" });
   }
 };
@@ -171,7 +162,6 @@ export const getUserCustomizedTemplatesController = async (req, res) => {
     const templates = await getUserCustomizedTemplatesService(userId);
     res.json(templates);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "Failed to fetch customized templates" });
   }
 };

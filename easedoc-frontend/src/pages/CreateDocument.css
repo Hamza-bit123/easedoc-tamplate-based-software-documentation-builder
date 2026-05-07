@@ -1,135 +1,135 @@
+/* CreateDocument.css - Updated for Global Consistency */
+
 .dashboard {
-    animation: fadeIn 0.4s ease-out;
-    max-width: 1200px;
+  animation: fadeIn 0.4s ease-out;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .dashboard h1 {
-    font-size: 1.8rem;
-    color: var(--text-main);
-    margin-bottom: 2rem;
+  font-size: var(--text-3xl);
+  color: var(--text-main);
+  margin-bottom: var(--space-8);
+  font-weight: 700;
 }
 
 /* Step Cards */
 .dashboard .card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    box-shadow: var(--shadow);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-8);
+  margin-bottom: var(--space-8);
+  box-shadow: var(--shadow-premium);
+  transition: all 0.3s ease;
 }
 
 .dashboard .card h2 {
-    font-size: 1.1rem;
-    color: var(--text-main);
-    margin-bottom: 1.25rem;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  font-size: var(--text-xl);
+  color: var(--text-main);
+  margin-bottom: var(--space-6);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-weight: 700;
 }
 
 /* Selection Grids */
 .dashboard .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-6);
 }
 
 /* Interactive Boxes (Types & Standards) */
 .dashboard .box {
-    background: var(--bg-body);
-    border: 2px solid transparent;
-    border-radius: 12px;
-    padding: 1.25rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: center;
-    color: var(--text-main);
-    font-weight: 500;
+  background: var(--bg-body);
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: center;
+  color: var(--text-main);
+  font-weight: 500;
 }
 
 .dashboard .box:hover {
-    transform: translateY(-3px);
-    background: var(--bg-card);
-    border-color: var(--secondary);
+  transform: translateY(-4px);
+  background: var(--bg-card);
+  border-color: var(--primary-light);
+  box-shadow: var(--shadow-md);
 }
 
 .dashboard .box.active {
-    background: rgba(126, 191, 181, 0.1);
-    border-color: var(--secondary);
-    color: var(--primary);
-    font-weight: 600;
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 700;
 }
 
 .dashboard .box h3 {
-    font-size: 1rem;
-    margin-bottom: 5px;
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-1);
+  font-weight: 700;
 }
 
 .dashboard .box p {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    font-weight: 400;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  font-weight: 400;
+  line-height: 1.5;
 }
 
 /* Template Specific Cards */
 .template-card {
-    background: var(--bg-body);
-    border-radius: 12px;
-    padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    border: 1px solid var(--border-color);
-    transition: border-color 0.3s;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .template-card:hover {
-    border-color: var(--primary);
+  border-color: var(--primary);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
 }
 
 .template-card h3 {
-    margin-bottom: 0.5rem;
-    color: var(--text-main);
+  margin-bottom: var(--space-2);
+  color: var(--text-main);
+  font-size: var(--text-lg);
+  font-weight: 700;
 }
 
 .template-card p {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    margin-bottom: 1.5rem;
-    line-height: 1.4;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-bottom: var(--space-6);
+  line-height: 1.6;
 }
 
-.dashboard .btn {
-    background: var(--primary);
-    color: white;
-    border: none;
-    padding: 10px;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.2s;
-    width: 100%;
+.template-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: auto;
 }
 
-.dashboard .btn:hover {
-    opacity: 0.9;
+/* Buttons are globally styled but we can add specific tweaks if needed */
+.dashboard .btn, 
+.dashboard .btn-outline {
+  width: 100%;
 }
 
 .empty {
-    color: var(--text-muted);
-    font-style: italic;
-    padding: 1rem;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  color: var(--text-muted);
+  font-style: italic;
+  padding: var(--space-4);
+  text-align: center;
 }

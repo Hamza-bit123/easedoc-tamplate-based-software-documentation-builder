@@ -61,7 +61,6 @@ export const createDocumentService = async (data) => {
 };
 
 export const getDocumentService = (id) => {
-  console.log("id" + id);
   return new Promise((resolve, reject) => {
     getDocumentById(id, (err, results) => {
       if (err) return reject(err);

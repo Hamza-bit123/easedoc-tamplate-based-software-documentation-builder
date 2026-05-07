@@ -22,7 +22,6 @@ const AdminDashboard = () => {
         const res = await api.get("/dashboard/admin");
         setData(res.data);
       } catch (err) {
-        console.error("Failed to fetch admin stats", err);
       } finally {
         setLoading(false);
       }
@@ -36,9 +35,12 @@ const AdminDashboard = () => {
   const { stats, recentDocuments, docsByType } = data;
 
   return (
-    <div className="dashboard-overview">
-      <h2 style={{ margin: "0 0 10px 0", color: "var(--text-main)" }}>Overview</h2>
-      
+    <div className="dashboard-overview animate-fade-in">
+      <div className="dashboard-header">
+        <h2>Dashboard Overview</h2>
+        <p>Welcome back! Here's what's happening with EaseDoc today.</p>
+      </div>
+
       {/* STAT CARDS */}
       <div className="stats-grid">
         <div className="stat-card">
@@ -46,59 +48,71 @@ const AdminDashboard = () => {
             <FiUsers />
           </div>
           <div className="stat-info">
-            <h3>Total Users</h3>
             <p>{stats.totalUsers}</p>
+            <h3>Total Users</h3>
           </div>
         </div>
-        
+
         <div className="stat-card">
           <div className="stat-icon templates">
             <FiLayers />
           </div>
           <div className="stat-info">
-            <h3>Total Templates</h3>
             <p>{stats.totalTemplates}</p>
+            <h3>Total Templates</h3>
           </div>
         </div>
-        
+
         <div className="stat-card">
           <div className="stat-icon docs">
             <FiFileText />
           </div>
           <div className="stat-info">
-            <h3>Total Documents</h3>
             <p>{stats.totalDocuments}</p>
+            <h3>Total Documents</h3>
           </div>
         </div>
       </div>
 
       <div className="dashboard-row">
         {/* CHART */}
-        <div className="dashboard-card">
-          <h3>Documents by Type</h3>
-          <div style={{ width: "100%", height: 300, minWidth: 0 }}>
+        <div className="card">
+          <div className="card-header">
+            <h3>Documents by Type</h3>
+          </div>
+          <div className="chart-container">
             {docsByType && docsByType.length > 0 ? (
-              <ResponsiveContainer>
-                <BarChart data={docsByType} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                  <YAxis axisLine={false} tickLine={false} />
-                  <Tooltip 
-                    cursor={{fill: 'rgba(0,0,0,0.05)'}} 
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={docsByType}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: 'var(--text-muted)', fontSize: 12}} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: 'var(--text-muted)', fontSize: 12}} />
+                  <Tooltip
+                    cursor={{ fill: "var(--primary-light)" }}
+                    contentStyle={{
+                      borderRadius: "12px",
+                      border: "1px solid var(--border-color)",
+                      boxShadow: "var(--shadow-md)",
+                      backgroundColor: "var(--bg-card)",
+                      color: "var(--text-main)"
+                    }}
                   />
-                  <Bar dataKey="count" fill="#4e7d96" radius={[4, 4, 0, 0]} barSize={40} />
+                  <Bar dataKey="count" fill="var(--primary)" radius={[6, 6, 0, 0]} barSize={40} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <p style={{ color: "#94a3b8", textAlign: "center", paddingTop: "100px" }}>No chart data available</p>
+              <div className="flex items-center justify-center h-full">
+                <p style={{ color: "var(--text-muted)" }}>No data available</p>
+              </div>
             )}
           </div>
         </div>
 
         {/* RECENT ACTIVITY */}
-        <div className="dashboard-card">
-          <h3>Recent Documents</h3>
+        <div className="card">
+          <div className="card-header">
+            <h3>Recent Documents</h3>
+          </div>
           <div className="recent-activity-list">
             {recentDocuments && recentDocuments.length > 0 ? (
               recentDocuments.map((doc) => (
@@ -107,13 +121,13 @@ const AdminDashboard = () => {
                     <h4>{doc.title}</h4>
                     <p>{doc.author} • {doc.template_name}</p>
                   </div>
-                  <div className={`activity-status status-${doc.status?.toLowerCase() || 'draft'}`}>
+                  <div className={`activity-status status-${doc.status?.toLowerCase().replace(/\s+/g, '-') || "draft"}`}>
                     {doc.status || "DRAFT"}
                   </div>
                 </div>
               ))
             ) : (
-              <p style={{ color: "#94a3b8" }}>No recent activity</p>
+              <p style={{ color: "var(--text-muted)", textAlign: "center" }}>No recent activity</p>
             )}
           </div>
         </div>

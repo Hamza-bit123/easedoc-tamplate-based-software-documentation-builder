@@ -11,7 +11,6 @@ export const getStandardsByTypeController = async (req, res) => {
 
     res.json(standards || []);
   } catch (err) {
-    console.error("STANDARD ERROR:", err);
     res.status(500).json({ message: "Server error" });
   }
 };

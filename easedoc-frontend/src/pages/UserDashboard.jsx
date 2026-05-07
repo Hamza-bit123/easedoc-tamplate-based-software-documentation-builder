@@ -20,8 +20,8 @@ const UserDashboard = () => {
       try {
         const res = await api.get("/dashboard/user");
         setData(res.data);
-      } catch (err) {
-        console.error("Failed to fetch user stats", err);
+      } catch {
+        // Error handled by UI
       } finally {
         setLoading(false);
       }
@@ -29,17 +29,29 @@ const UserDashboard = () => {
     fetchData();
   }, []);
 
-  if (loading) return <div>Loading dashboard...</div>;
-  if (!data) return <div>Failed to load dashboard data.</div>;
+  if (loading) return (
+    <div className="flex-center p-20">
+      <div className="animate-pulse text-muted">Loading your workspace...</div>
+    </div>
+  );
+  
+  if (!data) return <div className="text-center p-20">Failed to load dashboard data.</div>;
 
   const { stats, recentDocuments, docsByStatus } = data;
 
-  const COLORS = ["#f59e0b", "#10b981"]; // Orange for draft, Green for completed
+  // Use variables for chart colors
+  const COLORS = {
+    completed: "var(--success)",
+    draft: "var(--warning)"
+  };
 
   return (
-    <div className="dashboard-overview">
-      <h2 style={{ margin: "0 0 10px 0", color: "var(--text-main)" }}>My Overview</h2>
-      
+    <div className="dashboard-overview animate-fade-in">
+      <div className="dashboard-header">
+        <h2>My Overview</h2>
+        <p>Welcome back! Here's a summary of your workspace.</p>
+      </div>
+
       {/* STAT CARDS */}
       <div className="stats-grid">
         <div className="stat-card">
@@ -47,68 +59,94 @@ const UserDashboard = () => {
             <FiFileText />
           </div>
           <div className="stat-info">
-            <h3>Total Documents</h3>
             <p>{stats.totalDocuments}</p>
+            <h3>Total Documents</h3>
           </div>
         </div>
-        
+
         <div className="stat-card">
           <div className="stat-icon users">
             <FiEdit2 />
           </div>
           <div className="stat-info">
-            <h3>Drafts</h3>
             <p>{stats.draftDocs}</p>
+            <h3>Drafts</h3>
           </div>
         </div>
-        
+
         <div className="stat-card">
           <div className="stat-icon templates">
             <FiCheckCircle />
           </div>
           <div className="stat-info">
-            <h3>Completed</h3>
             <p>{stats.completedDocs}</p>
+            <h3>Completed</h3>
           </div>
         </div>
       </div>
 
       <div className="dashboard-row">
         {/* CHART */}
-        <div className="dashboard-card">
-          <h3>Documents Status</h3>
-          <div style={{ width: "100%", height: 300, minWidth: 0 }}>
-            {docsByStatus && docsByStatus.length > 0 && stats.totalDocuments > 0 ? (
-              <ResponsiveContainer>
+        <div className="card">
+          <div className="card-header">
+            <h3>Documents Status</h3>
+          </div>
+          <div className="chart-container flex items-center justify-center">
+            {docsByStatus &&
+            docsByStatus.length > 0 &&
+            stats.totalDocuments > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
                     data={docsByStatus}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
+                    innerRadius={70}
                     outerRadius={100}
-                    paddingAngle={5}
+                    paddingAngle={8}
                     dataKey="count"
+                    stroke="none"
                   >
                     {docsByStatus.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.name.toLowerCase() === 'completed' ? COLORS[1] : COLORS[0]} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={
+                          entry.name.toLowerCase() === "completed"
+                            ? COLORS.completed
+                            : COLORS.draft
+                        }
+                      />
                     ))}
                   </Pie>
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: "12px",
+                      border: "1px solid var(--border-color)",
+                      boxShadow: "var(--shadow-md)",
+                      backgroundColor: "var(--bg-card)",
+                      color: "var(--text-main)"
+                    }}
+                    itemStyle={{ color: "var(--text-main)" }}
                   />
-                  <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                  <Legend
+                    verticalAlign="bottom"
+                    height={36}
+                    iconType="circle"
+                    formatter={(value) => <span style={{ color: 'var(--text-main)', fontSize: '12px', fontWeight: 600 }}>{value}</span>}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <p style={{ color: "#94a3b8", textAlign: "center", paddingTop: "100px" }}>No documents yet</p>
+              <p style={{ color: "var(--text-muted)" }}>No documents yet</p>
             )}
           </div>
         </div>
 
         {/* RECENT ACTIVITY */}
-        <div className="dashboard-card">
-          <h3>Recent Documents</h3>
+        <div className="card">
+          <div className="card-header">
+            <h3>Recent Documents</h3>
+          </div>
           <div className="recent-activity-list">
             {recentDocuments && recentDocuments.length > 0 ? (
               recentDocuments.map((doc) => (
@@ -117,13 +155,13 @@ const UserDashboard = () => {
                     <h4>{doc.title}</h4>
                     <p>{doc.template_name}</p>
                   </div>
-                  <div className={`activity-status status-${doc.status?.toLowerCase() || 'draft'}`}>
+                  <div className={`activity-status status-${doc.status?.toLowerCase().replace(/\s+/g, '-') || "draft"}`}>
                     {doc.status || "DRAFT"}
                   </div>
                 </div>
               ))
             ) : (
-              <p style={{ color: "#94a3b8" }}>No recent documents</p>
+              <p style={{ color: "var(--text-muted)", textAlign: "center" }}>No recent documents</p>
             )}
           </div>
         </div>

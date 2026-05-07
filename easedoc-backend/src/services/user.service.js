@@ -50,6 +50,7 @@ export const loginUser = (userData) => {
         {
           id: user.id,
           role: user.role,
+          fullName: user.fullName,
         },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES },

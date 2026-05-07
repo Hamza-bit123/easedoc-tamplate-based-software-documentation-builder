@@ -15,8 +15,8 @@ const TemplateDetails = () => {
       try {
         const res = await api.get(`/templates/${id}/details`);
         setTemplate(res.data);
-      } catch (err) {
-        console.error("Error fetching template details:", err);
+      } catch {
+        // Error fetching details
       } finally {
         setLoading(false);
       }

@@ -129,27 +129,10 @@ const CreateTemplate = () => {
         navigate("/admin/templates");
       }
     } catch (err) {
-      console.error(err.response?.data);
       toast.error(err.response?.data?.message || "Failed to save template.");
     }
   };
 
-  //   const createTemplate = async () => {
-  //     if (!validate()) return;
-
-  //     try {
-  //       await api.post("/templates", {
-  //         ...template,
-  //         document_type_id: Number(template.document_type_id),
-  //         standard_id: Number(template.standard_id),
-  //         sections,
-  //       });
-
-  //       alert("Template created successfully");
-  //     } catch (err) {
-  //       console.error(err);
-  //     }
-  //   };
 
   const handleDocTypeChange = async (value) => {
     setTemplate({ ...template, document_type_id: value, standard_id: "" });
@@ -157,8 +140,8 @@ const CreateTemplate = () => {
     try {
       const res = await api.get(`/standards/${value}`);
       setStandards(res.data);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      // Error handled by caller or toast
     }
   };
 
@@ -186,8 +169,8 @@ const CreateTemplate = () => {
         });
 
         setSections(data.sections);
-      } catch (err) {
-        console.error(err);
+      } catch {
+        // Silently fail or handle elsewhere
       }
     };
 

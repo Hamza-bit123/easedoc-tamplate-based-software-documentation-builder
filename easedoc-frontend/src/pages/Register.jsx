@@ -1,85 +1,3 @@
-// import { useState } from "react";
-// import { useNavigate, Link } from "react-router-dom";
-// import api from "../api/axios";
-
-// const Register = () => {
-//   const [form, setForm] = useState({
-//     fullName: "",
-//     email: "",
-//     password: "",
-//   });
-
-//   const navigate = useNavigate();
-
-//   const handleChange = (e) => {
-//     setForm({
-//       ...form,
-//       [e.target.name]: e.target.value,
-//     });
-//   };
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-
-//     try {
-//       await api.post("/users/register", form);
-//       alert("Registered successfully");
-//       navigate("/login");
-//     } catch (err) {
-//       alert(err.response?.data?.message || "Registration failed");
-//     }
-//   };
-
-//   return (
-//     <div style={{ maxWidth: "400px", margin: "50px auto" }}>
-//       <h2>Register</h2>
-
-//       <form onSubmit={handleSubmit}>
-//         <input
-//           type="text"
-//           name="fullName"
-//           placeholder="Full Name"
-//           value={form.fullName}
-//           onChange={handleChange}
-//           required
-//         />
-//         <br />
-//         <br />
-
-//         <input
-//           type="email"
-//           name="email"
-//           placeholder="Email"
-//           value={form.email}
-//           onChange={handleChange}
-//           required
-//         />
-//         <br />
-//         <br />
-
-//         <input
-//           type="password"
-//           name="password"
-//           placeholder="Password"
-//           value={form.password}
-//           onChange={handleChange}
-//           required
-//         />
-//         <br />
-//         <br />
-
-//         <button type="submit">Register</button>
-//       </form>
-
-//       <p>
-//         Already have an account? <Link to="/login">Login</Link>
-//       </p>
-//     </div>
-//   );
-// };
-
-// export default Register;
-
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api/axios";
@@ -122,6 +40,10 @@ const Register = () => {
     <div className="auth-wrapper">
       <div className="auth-card">
         <div className="auth-header">
+          <div className="auth-logo">
+            <span className="logo-sparkle">✦</span>
+            <span>EasDoc</span>
+          </div>
           <h2>Create Account</h2>
           <p>Join EaseDoc to start documenting</p>
         </div>

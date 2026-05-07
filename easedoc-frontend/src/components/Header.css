@@ -1,111 +1,130 @@
+/* Header.css - Updated for Global Consistency */
+
 .top-header {
-    height: 70px;
-    padding: 0 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(8px);
-    border-bottom: 1px solid var(--border-color);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: 0 1px 10px rgba(0, 0, 0, 0.05);
-    transition: background 0.3s ease, border 0.3s ease;
+  height: var(--header-height);
+  padding: 0 var(--space-8);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 [data-theme="dark"] .top-header {
-    background: rgba(15, 23, 42, 0.95);
-    border-bottom: 1px solid #1e293b;
+  background: rgba(15, 23, 42, 0.85);
 }
 
 .welcome-section h1 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--text-main);
-    letter-spacing: -0.5px;
-    margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, var(--text-main), var(--primary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-family: var(--font-heading);
 }
 
 .header-actions {
-    display: flex;
-    align-items: center;
-    gap: 25px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
 }
 
-/* Theme Toggle Capsule Styles */
+/* Theme Toggle Capsule */
 .theme-capsule {
-    width: 55px;
-    height: 28px;
-    background-color: #cbd5e1;
-    border-radius: 20px;
-    position: relative;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 6px;
+  width: 60px;
+  height: 32px;
+  background: var(--bg-body);
+  border-radius: var(--radius-full);
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-[data-theme="dark"] .theme-capsule {
-    background-color: var(--primary);
+.theme-capsule:hover {
+  border-color: var(--primary-light);
+  box-shadow: var(--shadow-sm);
 }
 
 .toggle-icon {
-    font-size: 14px;
-    color: white;
-    z-index: 1;
-    opacity: 0.5;
+  font-size: 14px;
+  color: var(--text-muted);
+  z-index: 1;
+  transition: all 0.3s ease;
 }
 
 .toggle-icon.visible {
-    opacity: 1;
+  color: var(--primary);
 }
 
 .capsule-dot {
-    position: absolute;
-    width: 22px;
-    height: 22px;
-    background-color: white;
-    border-radius: 50%;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: var(--shadow-md);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--border-color);
 }
 
-.capsule-dot.left {
-    left: 3px;
+[data-theme="dark"] .capsule-dot {
+  background: var(--bg-card);
 }
 
 .capsule-dot.right {
-    left: 30px;
+  transform: translateX(26px);
 }
 
-/* Profile Capsule Styles */
+/* Profile Section */
 .user-profile-capsule {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background-color: var(--bg-card);
-    padding: 5px 15px 5px 5px;
-    border-radius: 30px;
-    box-shadow: var(--shadow);
-    border: 1px solid var(--border-color);
-    cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 4px var(--space-4) 4px 4px;
+  background: var(--bg-body);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.user-profile-capsule .avator {
-    text-align: center;
-    align-content: center;
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    background-color: #7ebfb5;
-    color: #fff;
-    font-weight: bold;
+.user-profile-capsule:hover {
+  background: var(--bg-card);
+  border-color: var(--primary-light);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.avator {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--primary), #6366f1);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  box-shadow: var(--shadow-sm);
 }
 
 .user-display-name {
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: var(--text-main);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  color: var(--text-main);
+  letter-spacing: -0.01em;
 }

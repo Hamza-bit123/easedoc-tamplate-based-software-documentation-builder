@@ -1,121 +1,128 @@
 .sidebar {
-    width: 260px;
-    background-color: var(--sidebar-teal);
-    color: white;
-    display: flex;
-    flex-direction: column;
-    padding: 2rem 0;
-    position: fixed;
-    height: 100vh;
-    z-index: 100;
+  width: var(--sidebar-width);
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 0;
+  position: fixed;
+  height: 100vh;
+  z-index: 100;
+  transition: all 0.3s ease;
 }
 
 .sidebar-brand {
-    padding: 0 2rem 3rem 2rem;
-    display: flex;
-    align-items: center;
-    gap: 12px;
+  padding: 0 1.5rem 2.5rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .brand-icon {
-    color: var(--secondary);
+  background: linear-gradient(135deg, var(--primary), #6366f1);
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
 }
 
 .brand-text {
-    font-size: 1.5rem;
-    font-weight: 700;
-    letter-spacing: 0.5px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-main);
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: -0.5px;
 }
 
 .sidebar-nav {
-    flex: 1;
+  flex: 1;
+  padding: 0 0.75rem;
 }
 
 .nav-group {
-    margin-bottom: 2rem;
+  margin-bottom: 2rem;
 }
 
 .nav-label {
-    padding: 0 2rem;
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: rgba(255, 255, 255, 0.4);
-    margin-bottom: 0.8rem;
+  padding: 0 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+  opacity: 0.6;
 }
 
 .nav-item {
-    padding: 0.9rem 2rem;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    color: rgba(255, 255, 255, 0.6);
-    text-decoration: none;
-    transition: all 0.3s;
-    position: relative;
-}
-
-/* THE CURVE EFFECT */
-.nav-item.active {
-    background-color: var(--active-match);
-    color: var(--sidebar-teal);
-    border-radius: 40px 0 0 40px;
-    font-weight: 600;
-    margin-left: 1rem;
-}
-
-/* Inverted Top Curve */
-.nav-item.active::before {
-    content: "";
-    position: absolute;
-    bottom: 100%;
-    right: 0;
-    height: 40px;
-    width: 40px;
-    border-bottom-right-radius: 20px;
-    box-shadow: 10px 10px 0 10px var(--active-match);
-    pointer-events: none;
-}
-
-/* Inverted Bottom Curve */
-.nav-item.active::after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    right: 0;
-    height: 40px;
-    width: 40px;
-    border-top-right-radius: 20px;
-    box-shadow: 10px -10px 0 10px var(--active-match);
-    pointer-events: none;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  font-size: 0.9375rem;
+  margin-bottom: 4px;
 }
 
 .nav-item .icon {
-    transition: transform 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: all 0.3s ease;
 }
 
-.nav-item:hover:not(.active) {
-    color: white;
-    background: rgba(255, 255, 255, 0.05);
+.nav-item:hover {
+  background-color: var(--secondary-light);
+  color: var(--text-main);
+}
+
+.nav-item:hover .icon {
+  opacity: 1;
+  transform: translateX(2px);
+}
+
+.nav-item.active {
+  background-color: var(--primary-light);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.nav-item.active .icon {
+  color: var(--primary);
+  opacity: 1;
 }
 
 .sidebar-footer {
-    margin-top: auto;
-    padding-bottom: 2rem;
+  margin-top: auto;
+  padding: 0 0.75rem;
 }
 
 .logout-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    width: 100%;
-    text-align: left;
-    font-size: 1rem;
-    font-family: inherit;
-    color: rgba(255, 255, 255, 0.6);
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  color: #ef4444;
+  margin-top: 1rem;
+  border-radius: var(--radius-md);
 }
 
 .logout-btn:hover {
-    color: #ff4d4f !important;
-    background: rgba(255, 77, 79, 0.1) !important;
+  background: rgba(239, 68, 68, 0.08) !important;
+  color: #dc2626 !important;
 }
+
+.logout-btn .icon {
+  color: #ef4444;
+}

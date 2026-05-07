@@ -43,6 +43,10 @@ const Login = () => {
     <div className="auth-wrapper">
       <div className="auth-card">
         <div className="auth-header">
+          <div className="auth-logo">
+            <span className="logo-sparkle">✦</span>
+            <span>EasDoc</span>
+          </div>
           <h2>Welcome Back</h2>
           <p>Log in to EaseDoc to continue</p>
         </div>
