@@ -1,5 +1,4 @@
 import puppeteer from "puppeteer-core";
-import { getDocumentFullData } from "../models/export.model.js";
 import {
   Document,
   Packer,
@@ -21,7 +20,15 @@ export const exportPDFService = async (html, res) => {
   await page.setContent(html, { waitUntil: "load" });
 
   const pdfBuffer = await page.pdf({
+    format: "A4",
+    margin: {
+      top: "0mm",
+      right: "0mm",
+      bottom: "0mm",
+      left: "0mm",
+    },
     printBackground: true,
+    preferCSSPageSize: true,
   });
 
   await browser.close();

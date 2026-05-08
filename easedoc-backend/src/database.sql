@@ -1,0 +1,5 @@
+-- The canonical EaseDoc database bootstrap has moved to:
+--   ../database/easedoc.sql
+--
+-- Keep SQL setup files outside src application code so they are easier to
+-- find, review, and run on another machine.

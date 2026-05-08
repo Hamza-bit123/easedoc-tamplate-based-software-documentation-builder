@@ -9,15 +9,9 @@ export const createTemplate = (data, callback) => {
       document_type_id,
       standard_id,
       created_by,
-      active,
-      default_font_family,
-      default_line_height,
-      page_margin_top,
-      page_margin_bottom,
-      page_margin_left,
-      page_margin_right
+      active
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?)
   `;
 
   db.query(
@@ -29,12 +23,6 @@ export const createTemplate = (data, callback) => {
       data.standard_id,
       data.created_by,
       data.active,
-      data.default_font_family,
-      data.default_line_height,
-      data.page_margin_top,
-      data.page_margin_bottom,
-      data.page_margin_left,
-      data.page_margin_right,
     ],
     callback,
   );
@@ -187,7 +175,13 @@ export const getTemplatesByType = (typeId, standardId, callback) => {
       COALESCE(v.created_at, t.created_at) as updated_at
     FROM templates t
     LEFT JOIN standards s ON t.standard_id = s.id
-    LEFT JOIN template_versions v ON t.id = v.template_id AND v.is_active = 1
+    LEFT JOIN template_versions v ON v.id = (
+      SELECT v2.id
+      FROM template_versions v2
+      WHERE v2.template_id = t.id
+      ORDER BY v2.is_active DESC, v2.version_number DESC, v2.id DESC
+      LIMIT 1
+    )
     WHERE t.document_type_id = ? AND t.active = 1
   `;
 
@@ -208,20 +202,13 @@ export const updateTemplateModel = (templateId, template) => {
   return new Promise((resolve, reject) => {
     const sql = `
       UPDATE templates
-      SET name = ?, description = ?, default_font_family = ?,
-          page_margin_top = ?, page_margin_bottom = ?,
-          page_margin_left = ?, page_margin_right = ?
+      SET name = ?, description = ?
       WHERE id = ?
     `;
 
     const values = [
       template.name,
       template.description,
-      template.default_font_family,
-      template.page_margin_top,
-      template.page_margin_bottom,
-      template.page_margin_left,
-      template.page_margin_right,
       templateId,
     ];
 

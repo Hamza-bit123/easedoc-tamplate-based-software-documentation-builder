@@ -14,7 +14,7 @@ export const upsertSection = (data, callback) => {
     sql,
     [
       data.document_id,
-      data.template_section_id,
+      data.template_section_version_id,
       data.content,
       data.custom_title,
     ],
@@ -26,17 +26,16 @@ export const getSectionsByDocument = (documentId, callback) => {
   const sql = `
     SELECT 
       ds.*, 
-      COALESCE(tsv.title, ts.title) as title, 
-      COALESCE(tsv.section_order, ts.section_order) as section_order,
-      ds.template_section_version_id as template_section_id
+      tsv.title, 
+      tsv.section_order
     FROM document_sections ds
     JOIN documents d ON ds.document_id = d.id
-    LEFT JOIN template_section_versions tsv 
-      ON ds.template_section_version_id = tsv.id AND d.template_version_id IS NOT NULL
-    LEFT JOIN template_sections ts 
-      ON ds.template_section_version_id = ts.id AND d.template_version_id IS NULL
+    JOIN template_section_versions tsv 
+      ON ds.template_section_version_id = tsv.id
+    JOIN template_versions tv
+      ON tsv.template_version_id = tv.id AND d.template_version_id = tv.id
     WHERE ds.document_id = ?
-    ORDER BY section_order ASC
+    ORDER BY tsv.section_order ASC
   `;
 
   db.query(sql, [documentId], callback);

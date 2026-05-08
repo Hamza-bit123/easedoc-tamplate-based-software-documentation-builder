@@ -18,7 +18,9 @@ export const createDocumentController = async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    res.status(500).json({ message: "Error creating document" });
+    res.status(500).json({
+      message: err.message || "Error creating document",
+    });
   }
 };
 
@@ -27,7 +29,9 @@ export const getDocumentController = async (req, res) => {
     const doc = await getDocumentService(req.params.id);
     res.json(doc);
   } catch (err) {
-    res.status(500).json(err);
+    res.status(500).json({
+      message: err.message || "Error fetching document",
+    });
   }
 };
 

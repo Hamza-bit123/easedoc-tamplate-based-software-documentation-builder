@@ -51,9 +51,9 @@ const CreateDocument = () => {
 
       navigate(`/editor/${documentId}`);
       toast.success("Document created successfully!");
-    } catch {
+    } catch (err) {
       // Error handled
-      toast.error("Failed to create document.");
+      toast.error(err.response?.data?.message || "Failed to create document.");
     }
   };
 

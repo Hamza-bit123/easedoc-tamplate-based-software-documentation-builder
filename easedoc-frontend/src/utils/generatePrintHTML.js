@@ -13,6 +13,7 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
       height: 297mm;
       margin: 0;
       box-sizing: border-box;
+      position: relative;
 
       padding-top: ${template.page_margin_top}mm;
       padding-bottom: ${template.page_margin_bottom}mm;
@@ -23,6 +24,14 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
       overflow: hidden;
 
       page-break-after: always;
+      break-after: page;
+    }
+    .page-number {
+      position: absolute;
+      bottom: 10mm;
+      right: 15mm;
+      font-size: 10pt;
+      color: #666;
     }
   `
     : `
@@ -324,10 +333,15 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
 <html>
 <head>
   <style>
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
     ${styles}
     @media print {
       body { background: white; }
-      .page { margin: 0; box-shadow: none; page-break-after: always; }
+      .page { margin: 0; box-shadow: none; page-break-after: always; break-after: page; }
     }
   </style>
 </head>

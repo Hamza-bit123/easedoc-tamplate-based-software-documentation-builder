@@ -11,6 +11,29 @@ import {
 } from "../models/template.model.js";
 import db from "../config/db.js";
 
+const getLatestVersion = async (templateId) => {
+  const [rows] = await db.promise().query(
+    `SELECT *
+     FROM template_versions
+     WHERE template_id = ?
+     ORDER BY is_active DESC, version_number DESC, id DESC
+     LIMIT 1`,
+    [templateId],
+  );
+
+  return rows[0];
+};
+
+const getTemplateVersionForUse = async (templateId) => {
+  const version = (await getActiveVersion(templateId)) || (await getLatestVersion(templateId));
+
+  if (!version) {
+    throw new Error("Template has no versions");
+  }
+
+  return version;
+};
+
 export const createTemplateService = async (data) => {
   const templateResult = await new Promise((resolve, reject) => {
     createTemplate(data, (err, result) => {
@@ -51,7 +74,13 @@ export const getTemplatesByTypeService = (typeId, standardId) => {
         COALESCE(v.created_at, t.created_at) as updated_at
       FROM templates t
       LEFT JOIN standards s ON t.standard_id = s.id
-      LEFT JOIN template_versions v ON t.id = v.template_id AND v.is_active = 1
+      LEFT JOIN template_versions v ON v.id = (
+        SELECT v2.id
+        FROM template_versions v2
+        WHERE v2.template_id = t.id
+        ORDER BY v2.is_active DESC, v2.version_number DESC, v2.id DESC
+        LIMIT 1
+      )
       WHERE t.document_type_id = ? AND t.active = 1 AND t.base_template_id IS NULL
     `;
 
@@ -82,30 +111,13 @@ export const getTemplateWithSectionsService = async (templateId) => {
 
   const template = templateResult[0];
 
-  const activeVersion = await getActiveVersion(templateId);
-  let sections = [];
-  let versionData = {};
+  const activeVersion = await getTemplateVersionForUse(templateId);
 
-  if (activeVersion) {
-    sections = await getVersionSections(activeVersion.id);
-    versionData = activeVersion;
-  } else {
-    // Fallback for older templates before versioning was introduced
-    sections = await new Promise((resolve, reject) => {
-      db.query(
-        "SELECT * FROM template_sections WHERE template_id = ? ORDER BY section_order ASC",
-        [templateId],
-        (err, res) => {
-          if (err) return reject(err);
-          resolve(res);
-        }
-      );
-    });
-  }
+  const sections = await getVersionSections(activeVersion.id);
 
   return {
     ...template,
-    ...versionData,
+    ...activeVersion,
     sections,
   };
 };
@@ -256,9 +268,6 @@ export const deleteTemplateService = async (templateId) => {
 
   // If no versions left and template can be deleted, delete it
   if (usage.canDeleteTemplate) {
-    // Delete base sections (if any exist outside versions)
-    await db.promise().query("DELETE FROM template_sections WHERE template_id = ?", [templateId]);
-    
     // Delete the template (Note: Cascading delete on base_template_id is handled by DB)
     await db.promise().query("DELETE FROM templates WHERE id = ?", [templateId]);
     return { deletedTemplate: true, message: "Template and all versions deleted successfully." };
@@ -291,9 +300,9 @@ export const customizeTemplateService = async (templateId, userId) => {
 
     // 4. Create new template (copy)
     const [newTemplateResult] = await db.promise().query(
-      `INSERT INTO templates (name, description, document_type_id, standard_id, created_by, base_template_id, active, 
-        default_font_family, default_line_height, page_margin_top, page_margin_bottom, page_margin_left, page_margin_right)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO templates
+         (name, description, document_type_id, standard_id, created_by, base_template_id, active)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         `${baseTemplate.name} (Customized)`,
         baseTemplate.description,
@@ -302,12 +311,6 @@ export const customizeTemplateService = async (templateId, userId) => {
         userId,
         templateId,
         1,
-        baseTemplate.default_font_family,
-        baseTemplate.default_line_height,
-        baseTemplate.page_margin_top,
-        baseTemplate.page_margin_bottom,
-        baseTemplate.page_margin_left,
-        baseTemplate.page_margin_right
       ]
     );
     const newTemplateId = newTemplateResult.insertId;
@@ -360,7 +363,13 @@ export const getUserCustomizedTemplatesService = async (userId) => {
      FROM templates t
      LEFT JOIN standards s ON t.standard_id = s.id
      LEFT JOIN document_types dt ON t.document_type_id = dt.id
-     LEFT JOIN template_versions v ON t.id = v.template_id AND v.is_active = 1
+     LEFT JOIN template_versions v ON v.id = (
+       SELECT v2.id
+       FROM template_versions v2
+       WHERE v2.template_id = t.id
+       ORDER BY v2.is_active DESC, v2.version_number DESC, v2.id DESC
+       LIMIT 1
+     )
      WHERE t.created_by = ? AND t.base_template_id IS NOT NULL`,
     [userId]
   );

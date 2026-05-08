@@ -17,6 +17,7 @@ const Editor = () => {
   const [previewHTML, setPreviewHTML] = useState("");
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState("draft");
+  const [loadError, setLoadError] = useState("");
   const PAGE_HEIGHT = 1122; // px (~A4)
 
   // ================= LOAD =================
@@ -34,17 +35,19 @@ const Editor = () => {
   const loadEditor = async () => {
     try {
       const doc = await api.get(`/documents/${documentId}`);
-      
-      const endpoint = doc.data.template_version_id 
-        ? `/templates/${doc.data.template_id}/version/${doc.data.template_version_id}/full`
-        : `/templates/${doc.data.template_id}/full`;
+
+      if (!doc.data.template_version_id) {
+        throw new Error("Document has no template version");
+      }
+
+      const endpoint = `/templates/${doc.data.template_id}/version/${doc.data.template_version_id}/full`;
         
       const temp = await api.get(endpoint);
       const sec = await api.get(`/document-sections/${documentId}`);
 
       let map = {};
       sec.data.forEach((s) => {
-        map[s.template_section_id] = {
+        map[s.template_section_version_id] = {
           title: s.custom_title || "",
           content: s.content || "",
         };
@@ -53,8 +56,11 @@ const Editor = () => {
       setTemplate(temp.data);
       setSections(map);
       setStatus(doc.data.status || "draft");
-    } catch {
+    } catch (err) {
       // Error handled
+      const message =
+        err.response?.data?.message || err.message || "Failed to load editor";
+      setLoadError(message);
       toast.error("Failed to load editor");
     }
   };
@@ -87,7 +93,7 @@ const Editor = () => {
       for (let sec of template.sections) {
         await api.post("/document-sections/save", {
           document_id: documentId,
-          template_section_id: sec.id,
+          template_section_version_id: sec.id,
           content: sections[sec.id]?.content || "",
           custom_title: sections[sec.id]?.title || sec.title,
         });
@@ -250,6 +256,15 @@ const Editor = () => {
 
     return pages;
   };
+
+  if (loadError) {
+    return (
+      <div className="editor-loading">
+        <p>Failed to load editor</p>
+        <p>{loadError}</p>
+      </div>
+    );
+  }
 
   if (!template)
     return (

@@ -2,6 +2,7 @@ import {
   upsertSection,
   getSectionsByDocument,
 } from "../models/documentSection.model.js";
+import { getDocumentService } from "./document.service.js";
 
 export const saveSectionService = (data) => {
   return new Promise((resolve, reject) => {
@@ -13,10 +14,10 @@ export const saveSectionService = (data) => {
 };
 
 export const getSectionsService = (documentId) => {
-  return new Promise((resolve, reject) => {
+  return getDocumentService(documentId).then(() => new Promise((resolve, reject) => {
     getSectionsByDocument(documentId, (err, results) => {
       if (err) return reject(err);
       resolve(results);
     });
-  });
+  }));
 };
