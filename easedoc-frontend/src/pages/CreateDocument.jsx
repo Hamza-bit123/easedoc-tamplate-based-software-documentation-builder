@@ -11,8 +11,16 @@ const CreateDocument = () => {
   const [standards, setStandards] = useState([]);
   const [selectedStandard, setSelectedStandard] = useState(null);
   const [templates, setTemplates] = useState([]);
+  const [documentTitles, setDocumentTitles] = useState({});
   const navigate = useNavigate();
   const { showPopup } = usePopup();
+
+  const getDefaultTitle = (templateName) => {
+    const now = new Date();
+    const pad = (value) => `${value}`.padStart(2, "0");
+
+    return `${templateName} - ${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
+  };
 
   // fetch standards
   const fetchStandards = async (typeId) => {
@@ -34,6 +42,12 @@ const CreateDocument = () => {
         `/templates/type/${typeId}?standard_id=${standardId}`,
       );
       setTemplates(res.data);
+      setDocumentTitles(
+        res.data.reduce((titles, template) => {
+          titles[template.id] = getDefaultTitle(template.name);
+          return titles;
+        }, {}),
+      );
     } catch {
       // Error handled
       setTemplates([]);
@@ -44,7 +58,7 @@ const CreateDocument = () => {
     try {
       const res = await api.post("/documents", {
         template_id: templateId,
-        title: "New Document",
+        title: documentTitles[templateId] || "",
       });
 
       const documentId = res.data.documentId;
@@ -148,6 +162,21 @@ const CreateDocument = () => {
                 <div key={t.id} className="template-card">
                   <h3>{t.name}</h3>
                   <p>{t.description}</p>
+
+                  <label className="document-name-field">
+                    <span>Document name</span>
+                    <input
+                      type="text"
+                      value={documentTitles[t.id] || ""}
+                      onChange={(e) =>
+                        setDocumentTitles({
+                          ...documentTitles,
+                          [t.id]: e.target.value,
+                        })
+                      }
+                      placeholder="Enter document name"
+                    />
+                  </label>
 
                   <div className="template-actions">
                     <button className="btn btn-primary" onClick={() => use_template(t.id)}>

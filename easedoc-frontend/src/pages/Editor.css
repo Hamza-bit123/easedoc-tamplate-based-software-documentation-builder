@@ -61,11 +61,29 @@
 }
 
 .toolbar-left h1 {
-  font-size: var(--text-lg);
-  color: var(--text-main);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
   margin: 0;
+  font-weight: 600;
+}
+
+.document-title-input {
+  width: min(420px, 38vw);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-main);
+  font-size: var(--text-lg);
   font-weight: 700;
-  letter-spacing: -0.01em;
+  padding: 2px var(--space-2) 2px 0;
+  outline: none;
+}
+
+.document-title-input:hover,
+.document-title-input:focus {
+  border-color: var(--border-color);
+  background: var(--bg-card);
+  padding-left: var(--space-2);
 }
 
 .toolbar-actions {

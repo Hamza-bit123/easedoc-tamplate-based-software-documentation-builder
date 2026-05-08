@@ -121,6 +121,36 @@
   margin-top: auto;
 }
 
+.document-name-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-5);
+}
+
+.document-name-field span {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.document-name-field input {
+  width: 100%;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-body);
+  color: var(--text-main);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  outline: none;
+}
+
+.document-name-field input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
 /* Buttons are globally styled but we can add specific tweaks if needed */
 .dashboard .btn, 
 .dashboard .btn-outline {

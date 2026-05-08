@@ -2,7 +2,10 @@ import { getActiveVersion, getVersionSections } from "../models/template.model.j
 import {
   createDocument,
   getDocumentById,
+  getMatchingUserDocumentTitles,
+  getTemplateDocumentName,
   getDocumentsByUser,
+  updateDocumentTitle,
 } from "../models/document.model.js";
 import db from "../config/db.js";
 
@@ -34,6 +37,39 @@ const getTemplateVersionForUse = async (templateId) => {
 const normalizeTitle = (value) => (value || "").trim().toLowerCase();
 
 const hasText = (value) => value !== null && value !== undefined && `${value}`.trim() !== "";
+
+const getTimestampCode = () => {
+  const now = new Date();
+  const pad = (value) => `${value}`.padStart(2, "0");
+
+  return [
+    now.getFullYear(),
+    pad(now.getMonth() + 1),
+    pad(now.getDate()),
+    "-",
+    pad(now.getHours()),
+    pad(now.getMinutes()),
+  ].join("");
+};
+
+const cleanDocumentTitle = (title) => `${title || ""}`.trim().replace(/\s+/g, " ");
+
+const buildDefaultDocumentTitle = async (userId, templateId) => {
+  const templateName = await getTemplateDocumentName(templateId);
+  const baseTitle = `${templateName} - ${getTimestampCode()}`;
+  const existingTitles = await getMatchingUserDocumentTitles(userId, baseTitle);
+
+  if (!existingTitles.includes(baseTitle)) {
+    return baseTitle;
+  }
+
+  let copyNumber = 2;
+  while (existingTitles.includes(`${baseTitle} (${copyNumber})`)) {
+    copyNumber += 1;
+  }
+
+  return `${baseTitle} (${copyNumber})`;
+};
 
 const repairDocumentSections = async (documentId, versionId) => {
   const versionSections = await getVersionSections(versionId);
@@ -143,6 +179,9 @@ const ensureDocumentVersion = async (document) => {
 export const createDocumentService = async (data) => {
   // 1. get active version, or latest version for older predefined templates
   const version = await getTemplateVersionForUse(data.template_id);
+  const title =
+    cleanDocumentTitle(data.title) ||
+    (await buildDefaultDocumentTitle(data.user_id, data.template_id));
 
   // 2. create document with version
   const result = await new Promise((resolve, reject) => {
@@ -151,7 +190,7 @@ export const createDocumentService = async (data) => {
         user_id: data.user_id,
         template_id: data.template_id,
         template_version_id: version.id,
-        title: data.title,
+        title,
       },
       (err, result) => {
         if (err) return reject(err);
@@ -230,4 +269,24 @@ export const updateDocumentStatusService = async (documentId, status) => {
       }
     );
   });
+};
+
+export const updateDocumentTitleService = async (documentId, userId, title) => {
+  const cleanTitle = cleanDocumentTitle(title);
+
+  if (!cleanTitle) {
+    const error = new Error("Document title is required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const [result] = await updateDocumentTitle(documentId, userId, cleanTitle);
+
+  if (result.affectedRows === 0) {
+    const error = new Error("Document not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return { title: cleanTitle };
 };

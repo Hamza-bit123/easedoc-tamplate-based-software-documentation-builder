@@ -4,6 +4,7 @@ import {
   validateDocumentService,
   getUserDocumentsService,
   updateDocumentStatusService,
+  updateDocumentTitleService,
 } from "../services/document.service.js";
 
 export const createDocumentController = async (req, res) => {
@@ -11,7 +12,7 @@ export const createDocumentController = async (req, res) => {
     const data = {
       user_id: req.user.id,
       template_id: req.body.template_id,
-      title: req.body.title || "Untitled Document",
+      title: req.body.title,
     };
 
     const result = await createDocumentService(data);
@@ -60,5 +61,20 @@ export const updateDocumentStatusController = async (req, res) => {
     res.json({ message: "Document status updated" });
   } catch (err) {
     res.status(500).json({ message: "Error updating status" });
+  }
+};
+
+export const updateDocumentTitleController = async (req, res) => {
+  try {
+    const result = await updateDocumentTitleService(
+      req.params.id,
+      req.user.id,
+      req.body.title,
+    );
+    res.json({ message: "Document title updated", ...result });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({
+      message: err.message || "Error updating title",
+    });
   }
 };

@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiFileText, FiCalendar, FiArrowRight, FiPlus } from "react-icons/fi";
+import { FiFileText, FiCalendar, FiArrowRight, FiPlus, FiEdit2 } from "react-icons/fi";
 import api from "../api/axios";
 import "./MyDocuments.css";
+import toast from "react-hot-toast";
+import { usePopup } from "../context/PopupContext";
 
 const MyDocuments = () => {
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { showPopup } = usePopup();
 
   useEffect(() => {
     loadDocs();
@@ -42,6 +45,38 @@ const MyDocuments = () => {
     if (diffInDays < 7) return `${diffInDays} days ago`;
 
     return past.toLocaleDateString(); // Fallback to date for older docs
+  };
+
+  const renameDocument = (doc, event) => {
+    event.stopPropagation();
+    showPopup({
+      type: "info",
+      title: "Rename Document",
+      message: "Update the name shown in your document list.",
+      showInput: true,
+      initialValue: doc.title,
+      placeholder: "Document name",
+      confirmText: "Save Name",
+      onConfirm: async (title) => {
+        const cleanTitle = title?.trim();
+        if (!cleanTitle) {
+          toast.error("Document name is required.");
+          return;
+        }
+
+        try {
+          await api.put(`/documents/${doc.id}/title`, { title: cleanTitle });
+          setDocs((currentDocs) =>
+            currentDocs.map((item) =>
+              item.id === doc.id ? { ...item, title: cleanTitle } : item,
+            ),
+          );
+          toast.success("Document renamed.");
+        } catch (err) {
+          toast.error(err.response?.data?.message || "Failed to rename document.");
+        }
+      },
+    });
   };
 
   if (loading)
@@ -87,6 +122,13 @@ const MyDocuments = () => {
               <div className="doc-icon-wrapper">
                 <FiFileText className="main-icon" />
               </div>
+              <button
+                className="rename-doc-btn"
+                title="Rename document"
+                onClick={(event) => renameDocument(doc, event)}
+              >
+                <FiEdit2 />
+              </button>
 
               <div className="doc-content">
                 <h3 title={doc.title}>{doc.title}</h3>

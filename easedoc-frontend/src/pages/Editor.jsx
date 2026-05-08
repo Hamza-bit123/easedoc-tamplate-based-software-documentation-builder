@@ -17,6 +17,7 @@ const Editor = () => {
   const [previewHTML, setPreviewHTML] = useState("");
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState("draft");
+  const [documentTitle, setDocumentTitle] = useState("");
   const [loadError, setLoadError] = useState("");
   const PAGE_HEIGHT = 1122; // px (~A4)
 
@@ -56,6 +57,7 @@ const Editor = () => {
       setTemplate(temp.data);
       setSections(map);
       setStatus(doc.data.status || "draft");
+      setDocumentTitle(doc.data.title || "");
     } catch (err) {
       // Error handled
       const message =
@@ -89,6 +91,18 @@ const Editor = () => {
   const saveAll = async () => {
     try {
       setSaving(true);
+
+      const cleanDocumentTitle = documentTitle.trim();
+      if (!cleanDocumentTitle) {
+        toast.error("Document name is required.");
+        setSaving(false);
+        return;
+      }
+
+      await api.put(`/documents/${documentId}/title`, {
+        title: cleanDocumentTitle,
+      });
+      setDocumentTitle(cleanDocumentTitle);
 
       for (let sec of template.sections) {
         await api.post("/document-sections/save", {
@@ -308,6 +322,12 @@ const Editor = () => {
           </div>
           <div className="title-group">
             <span className="template-label">Template Editor</span>
+            <input
+              className="document-title-input"
+              value={documentTitle}
+              onChange={(e) => setDocumentTitle(e.target.value)}
+              placeholder="Document name"
+            />
             <h1>{template.name}</h1>
           </div>
         </div>
@@ -337,7 +357,7 @@ const Editor = () => {
                 await api.put(`/documents/${documentId}/status`, { status: newStatus });
                 setStatus(newStatus);
                 toast.success(`Document marked as ${newStatus}`);
-              } catch(err) {
+              } catch {
                 toast.error("Failed to update status");
               }
             }} 
