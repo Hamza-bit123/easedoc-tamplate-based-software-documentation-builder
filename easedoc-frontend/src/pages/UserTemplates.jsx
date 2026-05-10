@@ -54,9 +54,6 @@ const UserTemplates = () => {
           <h1>My Customized Templates</h1>
           <p>Templates you've customized for your specific needs.</p>
         </div>
-        <button className="browse-btn" onClick={() => navigate("/user")}>
-          Browse All Templates
-        </button>
       </header>
 
       <div className="templates-grid">
@@ -91,10 +88,10 @@ const UserTemplates = () => {
         ) : (
           <div className="empty-state">
             <FiFileText size={48} />
-            <h3>No Customized Templates</h3>
-            <p>You haven't customized any templates yet. Go to the dashboard to start.</p>
-            <button className="btn btn-primary" onClick={() => navigate("/user")}>
-              Go to Dashboard
+            <h3>No Customized Templates Yet</h3>
+            <p>Browse the available templates and customize one to fit your needs.</p>
+            <button className="btn btn-primary" onClick={() => navigate("/user/documents/create")}>
+              Browse &amp; Customize Templates
             </button>
           </div>
         )}

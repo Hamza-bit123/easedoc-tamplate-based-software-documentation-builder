@@ -1,36 +1,247 @@
 import bcrypt from "bcryptjs";
-import { createUser, findUserByEmail } from "../models/user.model.js";
+import crypto from "node:crypto";
+import dns from "node:dns/promises";
+import {
+  createUser,
+  deletePendingUserVerification,
+  findPendingUserVerificationByEmail,
+  findUserByEmail,
+  incrementPendingVerificationAttempts,
+  upsertPendingUserVerification,
+} from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import db from "../config/db.js";
+import { sendVerificationCodeEmail } from "./email.service.js";
 
-export const registerUser = async (userData) => {
-  return new Promise((resolve, reject) => {
-    findUserByEmail(userData.email, async (err, results) => {
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const VERIFICATION_CODE_EXPIRES_MINUTES = 10;
+const RESEND_COOLDOWN_SECONDS = 60;
+const MAX_VERIFICATION_ATTEMPTS = 5;
+
+const normalizeEmail = (email = "") => email.trim().toLowerCase();
+const generateVerificationCode = () => crypto.randomInt(100000, 1000000).toString();
+const minutesFromNow = (minutes) => new Date(Date.now() + minutes * 60 * 1000);
+const secondsFromNow = (seconds) => new Date(Date.now() + seconds * 1000);
+
+const toMysqlDateTime = (date) => {
+  const pad = (value) => String(value).padStart(2, "0");
+
+  return [
+    date.getFullYear(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate()),
+  ].join("-") + ` ${[
+    pad(date.getHours()),
+    pad(date.getMinutes()),
+    pad(date.getSeconds()),
+  ].join(":")}`;
+};
+
+const validateEmail = async (email) => {
+  if (!EMAIL_PATTERN.test(email)) {
+    throw { message: "Please enter a valid email address" };
+  }
+
+  const domain = email.split("@")[1];
+
+  try {
+    const mxRecords = await dns.resolveMx(domain);
+
+    if (mxRecords.length === 0) {
+      throw new Error("No MX records found");
+    }
+  } catch {
+    try {
+      await dns.resolve4(domain);
+    } catch {
+      throw { message: "Email domain does not exist or cannot receive mail" };
+    }
+  }
+};
+
+const findUserByEmailAsync = (email) =>
+  new Promise((resolve, reject) => {
+    findUserByEmail(email, (err, results) => {
       if (err) return reject(err);
-
-      if (results.length > 0) {
-        return reject({ message: "User already exists" });
-      }
-
-      const hashedPassword = await bcrypt.hash(userData.password, 10);
-
-      createUser(
-        {
-          ...userData,
-          password: hashedPassword,
-        },
-        (err, result) => {
-          if (err) return reject(err);
-          resolve(result);
-        },
-      );
+      resolve(results);
     });
   });
+
+const findPendingUserVerificationByEmailAsync = (email) =>
+  new Promise((resolve, reject) => {
+    findPendingUserVerificationByEmail(email, (err, results) => {
+      if (err) return reject(err);
+      resolve(results);
+    });
+  });
+
+const createUserAsync = (user) =>
+  new Promise((resolve, reject) => {
+    createUser(user, (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
+  });
+
+const upsertPendingUserVerificationAsync = (pendingUser) =>
+  new Promise((resolve, reject) => {
+    upsertPendingUserVerification(pendingUser, (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
+  });
+
+const incrementPendingVerificationAttemptsAsync = (email) =>
+  new Promise((resolve, reject) => {
+    incrementPendingVerificationAttempts(email, (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
+  });
+
+const deletePendingUserVerificationAsync = (email) =>
+  new Promise((resolve, reject) => {
+    deletePendingUserVerification(email, (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
+  });
+
+const createAndSendVerificationCode = async ({ fullName, email, password }) => {
+  const code = generateVerificationCode();
+  const hashedCode = await bcrypt.hash(code, 10);
+
+  await upsertPendingUserVerificationAsync({
+    fullName,
+    email,
+    password,
+    verificationCode: hashedCode,
+    expiresAt: toMysqlDateTime(minutesFromNow(VERIFICATION_CODE_EXPIRES_MINUTES)),
+    resendAvailableAt: toMysqlDateTime(secondsFromNow(RESEND_COOLDOWN_SECONDS)),
+  });
+
+  try {
+    await sendVerificationCodeEmail({
+      to: email,
+      fullName,
+      code,
+    });
+  } catch (emailErr) {
+    await deletePendingUserVerificationAsync(email);
+    throw emailErr;
+  }
+};
+
+export const registerUser = async (userData) => {
+  const email = normalizeEmail(userData.email);
+  await validateEmail(email);
+
+  const existingUsers = await findUserByEmailAsync(email);
+
+  if (existingUsers.length > 0) {
+    throw { message: "User already exists" };
+  }
+
+  const hashedPassword = await bcrypt.hash(userData.password, 10);
+
+  await createAndSendVerificationCode({
+    fullName: userData.fullName,
+    email,
+    password: hashedPassword,
+  });
+
+  return {
+    email,
+    message: "Verification code sent to your email",
+  };
+};
+
+export const verifyEmailCodeService = async ({ email: rawEmail, code }) => {
+  const email = normalizeEmail(rawEmail);
+  const cleanCode = String(code || "").trim();
+
+  if (!EMAIL_PATTERN.test(email) || !/^\d{6}$/.test(cleanCode)) {
+    throw { message: "Invalid verification details" };
+  }
+
+  const pendingRows = await findPendingUserVerificationByEmailAsync(email);
+
+  if (pendingRows.length === 0) {
+    throw { message: "No pending verification found for this email" };
+  }
+
+  const pendingUser = pendingRows[0];
+
+  if (pendingUser.attempts >= MAX_VERIFICATION_ATTEMPTS) {
+    throw { message: "Too many incorrect attempts. Please resend a new code" };
+  }
+
+  if (new Date(pendingUser.expires_at).getTime() < Date.now()) {
+    throw { message: "Verification code expired. Please resend a new code" };
+  }
+
+  const isCodeValid = await bcrypt.compare(cleanCode, pendingUser.verification_code);
+
+  if (!isCodeValid) {
+    await incrementPendingVerificationAttemptsAsync(email);
+    throw { message: "Incorrect verification code" };
+  }
+
+  const existingUsers = await findUserByEmailAsync(email);
+
+  if (existingUsers.length > 0) {
+    await deletePendingUserVerificationAsync(email);
+    throw { message: "User already exists" };
+  }
+
+  const result = await createUserAsync({
+    fullName: pendingUser.fullName,
+    email: pendingUser.email,
+    password: pendingUser.password,
+  });
+
+  await deletePendingUserVerificationAsync(email);
+
+  return result;
+};
+
+export const resendVerificationCodeService = async ({ email: rawEmail }) => {
+  const email = normalizeEmail(rawEmail);
+  await validateEmail(email);
+
+  const existingUsers = await findUserByEmailAsync(email);
+
+  if (existingUsers.length > 0) {
+    throw { message: "User already exists" };
+  }
+
+  const pendingRows = await findPendingUserVerificationByEmailAsync(email);
+
+  if (pendingRows.length === 0) {
+    throw { message: "No pending verification found for this email" };
+  }
+
+  const pendingUser = pendingRows[0];
+
+  if (new Date(pendingUser.resend_available_at).getTime() > Date.now()) {
+    throw { message: "Please wait before requesting another code" };
+  }
+
+  await createAndSendVerificationCode({
+    fullName: pendingUser.fullName,
+    email: pendingUser.email,
+    password: pendingUser.password,
+  });
+
+  return {
+    email,
+    message: "A new verification code has been sent",
+  };
 };
 
 export const loginUser = (userData) => {
   return new Promise((resolve, reject) => {
-    findUserByEmail(userData.email, async (err, results) => {
+    findUserByEmail(normalizeEmail(userData.email), async (err, results) => {
       if (err) return reject(err);
 
       if (results.length === 0) {

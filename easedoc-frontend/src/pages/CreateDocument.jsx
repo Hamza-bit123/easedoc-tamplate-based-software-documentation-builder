@@ -95,7 +95,7 @@ const CreateDocument = () => {
         const res = await api.get("/document-types");
         setTypes(res.data);
       } catch {
-      // Error handled
+        // Error handled
       }
     };
 
@@ -182,12 +182,14 @@ const CreateDocument = () => {
                     <button className="btn btn-primary" onClick={() => use_template(t.id)}>
                       Use Template
                     </button>
-                    <button 
-                      className="btn-outline" 
-                      onClick={() => customizeTemplate(t.id)}
-                    >
-                      Customize
-                    </button>
+                    {!t.base_template_id && (
+                      <button
+                        className="btn-outline"
+                        onClick={() => customizeTemplate(t.id)}
+                      >
+                        Customize
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

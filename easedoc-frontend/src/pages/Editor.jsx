@@ -3,9 +3,8 @@ import { useParams } from "react-router-dom";
 import api from "../api/axios";
 import "./Editor.css";
 import generatePrintHTML from "../utils/generatePrintHTML";
-import { FiSave, FiEye, FiDownload, FiFileText, FiX } from "react-icons/fi";
+import { FiSave, FiEye, FiDownload, FiFileText, FiX, FiChevronUp } from "react-icons/fi";
 import { BiSolidFileDoc } from "react-icons/bi";
-import "./Editor.css";
 import toast from "react-hot-toast";
 
 const Editor = () => {
@@ -19,12 +18,15 @@ const Editor = () => {
   const [status, setStatus] = useState("draft");
   const [documentTitle, setDocumentTitle] = useState("");
   const [loadError, setLoadError] = useState("");
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const PAGE_HEIGHT = 1122; // px (~A4)
 
   // ================= LOAD =================
   useEffect(() => {
     loadEditor();
   }, []);
+
+  // Auto-resize textareas on section change
   useEffect(() => {
     setTimeout(() => {
       document.querySelectorAll(".editor-input").forEach((textarea) => {
@@ -33,6 +35,24 @@ const Editor = () => {
       });
     }, 0);
   }, [sections]);
+
+  // Scroll-to-top visibility (listening to main container scroll)
+  useEffect(() => {
+    const scroller = document.querySelector(".main-container");
+    if (!scroller) return;
+
+    const onScroll = () => {
+      setShowScrollTop(scroller.scrollTop > 400);
+    };
+    
+    scroller.addEventListener("scroll", onScroll);
+    return () => scroller.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    document.querySelector(".main-container")?.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const loadEditor = async () => {
     try {
       const doc = await api.get(`/documents/${documentId}`);
@@ -59,9 +79,7 @@ const Editor = () => {
       setStatus(doc.data.status || "draft");
       setDocumentTitle(doc.data.title || "");
     } catch (err) {
-      // Error handled
-      const message =
-        err.response?.data?.message || err.message || "Failed to load editor";
+      const message = err.response?.data?.message || err.message || "Failed to load editor";
       setLoadError(message);
       toast.error("Failed to load editor");
     }
@@ -117,7 +135,6 @@ const Editor = () => {
       setSaving(false);
     } catch {
       setSaving(false);
-      // Error handled
       toast.error("Save failed");
     }
   };
@@ -132,24 +149,18 @@ const Editor = () => {
     };
 
     window.addEventListener("keydown", handler);
-
-    return () => {
-      window.removeEventListener("keydown", handler);
-    };
-  }, [sections, template]);
+    return () => window.removeEventListener("keydown", handler);
+  }, [sections, template, documentTitle]);
 
   // ================= VALIDATION =================
   const validate = async () => {
     try {
       const res = await api.get(`/documents/${documentId}/validate`);
-
       let errMap = {};
       res.data.errors.forEach((e) => {
         errMap[e.section_id] = e.message;
       });
-
       setErrors(errMap);
-
       return Object.keys(errMap).length === 0;
     } catch {
       toast.error("Validation failed");
@@ -159,46 +170,30 @@ const Editor = () => {
 
   const handlePreview = async () => {
     await saveAll();
-
     const isValid = await validate();
     if (!isValid) return;
     const html = generatePrintHTML(template, sections, false);
-
-    // const previewWindow = window.open("", "_blank");
-
-    // previewWindow.document.open();
-    // previewWindow.document.write(html);
-    // previewWindow.document.close();
-
-    // previewWindow.focus();
-
     setPreviewHTML(html);
   };
 
   // ================= EXPORT =================
   const handleExport = async () => {
     const html = generatePrintHTML(template, sections, true);
-
     try {
       const res = await api.post(
         "/export/pdf",
         { html },
         { responseType: "blob" },
       );
-
       const url = window.URL.createObjectURL(res.data);
       const link = document.createElement("a");
-
       link.href = url;
       link.download = "document.pdf";
       link.click();
     } catch {
-      // Error handled
       toast.error("Export failed");
     }
   };
-
-  //===================== WORD EXPORT====================
 
   const handleExportWord = async () => {
     try {
@@ -207,86 +202,53 @@ const Editor = () => {
         { template, sections },
         { responseType: "blob" },
       );
-
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement("a");
-
       link.href = url;
       link.download = "document.docx";
       link.click();
     } catch {
-      // Error handled
       toast.error("Word export failed");
     }
   };
 
   const generateNumbering = (sections) => {
     const counters = {};
-
     return sections.map((sec) => {
       const level = sec.level || 1;
-
       if (!counters[level]) counters[level] = 0;
       counters[level]++;
-
-      // reset deeper levels
-      for (let i = level + 1; i <= 10; i++) {
-        counters[i] = 0;
-      }
-
+      for (let i = level + 1; i <= 10; i++) counters[i] = 0;
       const number = Object.keys(counters)
         .slice(0, level)
         .map((lvl) => counters[lvl] || 0)
         .join(".");
-
-      return {
-        ...sec,
-        number,
-      };
+      return { ...sec, number };
     });
   };
+
   const paginateSections = (sectionsList) => {
     const pages = [];
     let currentPage = [];
     let currentHeight = 0;
 
     sectionsList.forEach((sec) => {
-      const estimatedHeight =
-        120 + (sections[sec.id]?.content?.length || 0) * 0.5;
-
+      const estimatedHeight = 120 + (sections[sec.id]?.content?.length || 0) * 0.5;
       if (currentHeight + estimatedHeight > PAGE_HEIGHT) {
         pages.push(currentPage);
         currentPage = [];
         currentHeight = 0;
       }
-
       currentPage.push(sec);
       currentHeight += estimatedHeight;
     });
 
-    if (currentPage.length) {
-      pages.push(currentPage);
-    }
-
+    if (currentPage.length) pages.push(currentPage);
     return pages;
   };
 
-  if (loadError) {
-    return (
-      <div className="editor-loading">
-        <p>Failed to load editor</p>
-        <p>{loadError}</p>
-      </div>
-    );
-  }
-
-  if (!template)
-    return (
-      <div className="editor-loading">
-        <div className="loader"></div>
-        <p>Preparing Workspace...</p>
-      </div>
-    );
+  if (loadError) return <div className="editor-loading"><p>{loadError}</p></div>;
+  if (!template) return <div className="editor-loading"><div className="loader"></div><p>Preparing Workspace...</p></div>;
 
   const numberedSections = generateNumbering(template.sections);
   const pages = paginateSections(numberedSections);
@@ -298,60 +260,32 @@ const Editor = () => {
           <div className="preview-modal">
             <div className="preview-header">
               <h3>Document Preview</h3>
-              <button
-                className="close-preview"
-                onClick={() => setPreviewHTML("")}
-              >
-                <FiX size={24} />
-              </button>
+              <button className="close-preview" onClick={() => setPreviewHTML("")}><FiX size={24} /></button>
             </div>
-            <iframe
-              title="preview"
-              srcDoc={previewHTML}
-              className="preview-frame"
-            />
+            <iframe title="preview" srcDoc={previewHTML} className="preview-frame" />
           </div>
         </div>
       )}
 
-      {/* STICKY TOOLBAR */}
       <div className="editor-toolbar">
-        <div className="toolbar-left">
-          <div className="doc-icon-circle">
-            <FiFileText />
-          </div>
+        <div className="toolbar-row toolbar-row-title">
+          <div className="doc-icon-circle"><FiFileText /></div>
           <div className="title-group">
-            <span className="template-label">Template Editor</span>
-            <input
-              className="document-title-input"
-              value={documentTitle}
-              onChange={(e) => setDocumentTitle(e.target.value)}
-              placeholder="Document name"
-            />
-            <h1>{template.name}</h1>
+            <span className="template-label">Template · {template.name}</span>
+            <input className="document-title-input" value={documentTitle} onChange={(e) => setDocumentTitle(e.target.value)} placeholder="Document name" />
           </div>
         </div>
 
-        <div className="toolbar-actions">
-          <button
-            onClick={saveAll}
-            className={`btn-save ${saving ? "saving-pulse" : ""}`}
-            disabled={saving}
-          >
-            <FiSave /> {saving ? "Saving..." : "Save"}
-          </button>
-          <button onClick={handlePreview} className="btn-secondary">
-            <FiEye /> Preview
-          </button>
-
+        <div className="toolbar-row toolbar-row-actions">
+          <button onClick={saveAll} className={`btn-save ${saving ? "saving-pulse" : ""}`} disabled={saving}><FiSave /> {saving ? "Saving..." : "Save"}</button>
+          <button onClick={handlePreview} className="btn-secondary"><FiEye /> Preview</button>
           <div className="divider"></div>
-
-          <button 
+          <button
             onClick={async () => {
               const newStatus = status === "completed" ? "draft" : "completed";
               if (newStatus === "completed") {
                 const isValid = await validate();
-                if (!isValid) return; // Prevent completion if validation fails
+                if (!isValid) return;
               }
               try {
                 await api.put(`/documents/${documentId}/status`, { status: newStatus });
@@ -360,23 +294,17 @@ const Editor = () => {
               } catch {
                 toast.error("Failed to update status");
               }
-            }} 
+            }}
             className="btn-secondary"
-            style={status === "completed" ? { background: '#10b981', color: 'white', borderColor: '#10b981' } : {}}
+            style={status === "completed" ? { background: "#10b981", color: "white", borderColor: "#10b981" } : {}}
           >
-            {status === "completed" ? "Completed" : "Mark as Completed"}
+            {status === "completed" ? "✓ Completed" : "Mark as Completed"}
           </button>
-
-          <button onClick={handleExport} className="btn-export">
-            <FiDownload /> PDF
-          </button>
-          <button onClick={handleExportWord} className="btn-export">
-            <BiSolidFileDoc /> Word
-          </button>
+          <button onClick={handleExport} className="btn-export"><FiDownload /> PDF</button>
+          <button onClick={handleExportWord} className="btn-export"><BiSolidFileDoc /> Word</button>
         </div>
       </div>
 
-      {/* DOCUMENT AREA */}
       <div className="document-scroller">
         {pages.map((page, pageIndex) => (
           <div key={pageIndex} className="page">
@@ -384,13 +312,8 @@ const Editor = () => {
               <div key={sec.id} className="section-block">
                 <div className={`section-header level-${sec.level}`}>
                   <span className="section-number">{sec.number}</span>
-                  <input
-                    value={sections[sec.id]?.title || sec.title}
-                    onChange={(e) => handleTitleChange(sec.id, e.target.value)}
-                    className="editor-title-input"
-                  />
+                  <input value={sections[sec.id]?.title || sec.title} onChange={(e) => handleTitleChange(sec.id, e.target.value)} className="editor-title-input" />
                 </div>
-
                 <textarea
                   placeholder="Start typing your content here..."
                   value={sections[sec.id]?.content || ""}
@@ -402,15 +325,17 @@ const Editor = () => {
                     e.target.style.height = e.target.scrollHeight + "px";
                   }}
                 />
-                {errors[sec.id] && (
-                  <span className="error-text">{errors[sec.id]}</span>
-                )}
+                {errors[sec.id] && <span className="error-text">{errors[sec.id]}</span>}
               </div>
             ))}
             <div className="page-footer">Page {pageIndex + 1}</div>
           </div>
         ))}
       </div>
+
+      {showScrollTop && (
+        <button className="scroll-top-fab" onClick={scrollToTop} title="Scroll to top"><FiChevronUp size={22} /></button>
+      )}
     </div>
   );
 };

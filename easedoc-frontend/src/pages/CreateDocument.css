@@ -151,8 +151,30 @@
   box-shadow: 0 0 0 3px var(--primary-light);
 }
 
+.input-icon {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  margin-right: var(--space-3);
+  transition: color 0.3s ease;
+}
+
+.document-name-input-wrapper:focus-within .input-icon {
+  color: var(--primary);
+}
+
+.document-name-input-wrapper input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  outline: none;
+  padding: var(--space-1) 0;
+}
+
 /* Buttons are globally styled but we can add specific tweaks if needed */
-.dashboard .btn, 
+.dashboard .btn,
 .dashboard .btn-outline {
   width: 100%;
 }

@@ -5,12 +5,12 @@ import {
   MdOutlineLayers,
   MdOutlinePostAdd,
 } from "react-icons/md";
-import { FiUsers, FiSettings, FiFileText, FiLogOut } from "react-icons/fi";
+import { FiUsers, FiSettings, FiFileText, FiLogOut, FiX } from "react-icons/fi";
 import { HiOutlineSparkles } from "react-icons/hi2";
 import "./sidebar.css";
 import { AuthContext } from "../context/AuthContext";
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, toggleSidebar }) => {
   const { user, logout } = useContext(AuthContext);
   const role = user?.role;
   // Navigation configurations
@@ -60,12 +60,17 @@ const Sidebar = () => {
   const currentMenu = menuItems[role] || menuItems.user;
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isOpen ? "open" : "closed"}`}>
       <div className="sidebar-brand">
-        <div className="brand-icon">
-          <HiOutlineSparkles size={28} />
+        <div className="brand-wrapper" style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+          <div className="brand-icon">
+            <HiOutlineSparkles size={28} />
+          </div>
+          <h2 className="brand-text">EasDoc</h2>
         </div>
-        <h2 className="brand-text">EasDoc</h2>
+        <button className="sidebar-close-btn" onClick={toggleSidebar}>
+          <FiX size={24} />
+        </button>
       </div>
 
       <nav className="sidebar-nav">

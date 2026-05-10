@@ -60,9 +60,9 @@ export const createTemplateService = async (data) => {
   };
 };
 
-export const getTemplatesByTypeService = (typeId, standardId) => {
+export const getTemplatesByTypeService = (typeId, standardId, userId) => {
   return new Promise((resolve, reject) => {
-    // Modified to exclude user-customized templates for general browsing
+    // Modified to include user-customized templates for the current user
     let sql = `
       SELECT 
         t.id, 
@@ -71,7 +71,8 @@ export const getTemplatesByTypeService = (typeId, standardId) => {
         t.created_at,
         s.name as standard_name,
         v.version_number as version,
-        COALESCE(v.created_at, t.created_at) as updated_at
+        COALESCE(v.created_at, t.created_at) as updated_at,
+        t.base_template_id
       FROM templates t
       LEFT JOIN standards s ON t.standard_id = s.id
       LEFT JOIN template_versions v ON v.id = (
@@ -81,10 +82,10 @@ export const getTemplatesByTypeService = (typeId, standardId) => {
         ORDER BY v2.is_active DESC, v2.version_number DESC, v2.id DESC
         LIMIT 1
       )
-      WHERE t.document_type_id = ? AND t.active = 1 AND t.base_template_id IS NULL
+      WHERE t.document_type_id = ? AND t.active = 1 AND (t.base_template_id IS NULL OR t.created_by = ?)
     `;
 
-    const params = [typeId];
+    const params = [typeId, userId];
     if (standardId !== "all") {
       sql += " AND t.standard_id = ?";
       params.push(standardId);

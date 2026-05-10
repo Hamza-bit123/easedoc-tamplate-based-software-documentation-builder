@@ -49,6 +49,7 @@ export const getTemplatesByTypeController = async (req, res) => {
   try {
     const typeId = Number(req.params.typeId);
     let standardId = req.query.standard_id;
+    const userId = req.user.id;
 
     if (!standardId) {
       return res.status(400).json({ message: "standard_id required" });
@@ -56,7 +57,7 @@ export const getTemplatesByTypeController = async (req, res) => {
 
     if (standardId !== "all") standardId = Number(standardId);
 
-    const templates = await getTemplatesByTypeService(typeId, standardId);
+    const templates = await getTemplatesByTypeService(typeId, standardId, userId);
 
     res.json(templates || []);
   } catch (err) {

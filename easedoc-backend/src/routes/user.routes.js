@@ -1,10 +1,20 @@
 import express from "express";
-import { register, login, getAllUsers, updateUserRole, deleteUser } from "../controllers/user.controller.js";
+import {
+  register,
+  login,
+  getAllUsers,
+  updateUserRole,
+  deleteUser,
+  verifyEmailCode,
+  resendVerificationCode,
+} from "../controllers/user.controller.js";
 import { verifyToken, isAdmin } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
 router.post("/register", register);
+router.post("/verify-email", verifyEmailCode);
+router.post("/resend-verification-code", resendVerificationCode);
 router.post("/login", login);
 
 // Admin routes

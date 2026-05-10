@@ -186,6 +186,13 @@
   color: var(--text-muted);
 }
 
+.version-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
 .current-badge {
   background: var(--primary);
   color: white;
@@ -194,6 +201,7 @@
   font-size: var(--text-xs);
   font-weight: 700;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .view-version-btn {
@@ -206,6 +214,8 @@
   font-size: var(--text-sm);
   font-weight: 600;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .view-version-btn:hover {

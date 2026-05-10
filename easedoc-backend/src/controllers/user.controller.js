@@ -1,15 +1,45 @@
-import { registerUser, loginUser, getAllUsersService, updateUserRoleService, deleteUserService } from "../services/user.service.js";
+import {
+  registerUser,
+  loginUser,
+  getAllUsersService,
+  updateUserRoleService,
+  deleteUserService,
+  verifyEmailCodeService,
+  resendVerificationCodeService,
+} from "../services/user.service.js";
 
 export const register = async (req, res) => {
   try {
     const result = await registerUser(req.body);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(400).json({
+      message: error.message || "Registration failed",
+    });
+  }
+};
+
+export const verifyEmailCode = async (req, res) => {
+  try {
+    const result = await verifyEmailCodeService(req.body);
     res.status(201).json({
-      message: "User registered successfully",
+      message: "Email verified successfully. You can now login.",
       data: result,
     });
   } catch (error) {
     res.status(400).json({
-      message: error.message || "Registration failed",
+      message: error.message || "Email verification failed",
+    });
+  }
+};
+
+export const resendVerificationCode = async (req, res) => {
+  try {
+    const result = await resendVerificationCodeService(req.body);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(400).json({
+      message: error.message || "Failed to resend verification code",
     });
   }
 };

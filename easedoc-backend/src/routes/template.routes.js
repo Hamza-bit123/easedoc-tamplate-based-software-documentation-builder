@@ -16,7 +16,7 @@ import { verifyToken, isAdmin } from "../middlewares/auth.middleware.js";
 const router = express.Router();
 
 router.post("/", verifyToken, createTemplateController);
-router.get("/type/:typeId", getTemplatesByTypeController);
+router.get("/type/:typeId", verifyToken, getTemplatesByTypeController);
 router.get("/:id/details", getTemplateDetailsController);
 router.get("/:id/usage", verifyToken, isAdmin, getTemplateUsageController);
 router.get("/:id/full", getTemplateWithSectionsController);

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiFileText, FiCalendar, FiArrowRight, FiPlus, FiEdit2 } from "react-icons/fi";
+import { FiFileText, FiCalendar, FiArrowRight, FiPlus, FiPenTool } from "react-icons/fi";
 import api from "../api/axios";
 import "./MyDocuments.css";
 import toast from "react-hot-toast";
@@ -122,16 +122,18 @@ const MyDocuments = () => {
               <div className="doc-icon-wrapper">
                 <FiFileText className="main-icon" />
               </div>
-              <button
-                className="rename-doc-btn"
-                title="Rename document"
-                onClick={(event) => renameDocument(doc, event)}
-              >
-                <FiEdit2 />
-              </button>
 
               <div className="doc-content">
-                <h3 title={doc.title}>{doc.title}</h3>
+                <div className="doc-title-row">
+                  <h3 title={doc.title}>{doc.title}</h3>
+                  <button
+                    className="rename-doc-btn"
+                    title="Rename document"
+                    onClick={(event) => renameDocument(doc, event)}
+                  >
+                    <FiPenTool size={13} />
+                  </button>
+                </div>
                 <span className="template-badge">{doc.template_name}</span>
 
                 <div className="doc-footer">

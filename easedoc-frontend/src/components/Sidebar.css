@@ -15,7 +15,20 @@
   padding: 0 1.5rem 2.5rem 1.5rem;
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+}
+
+.sidebar-close-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: var(--space-1);
+}
+
+.sidebar-close-btn:hover {
+  color: var(--text-main);
 }
 
 .brand-icon {
@@ -123,6 +136,27 @@
   color: #dc2626 !important;
 }
 
-.logout-btn .icon {
-  color: #ef4444;
+/* Sidebar Toggle Styles */
+.sidebar {
+  transform: translateX(0);
+}
+
+.sidebar.closed {
+  transform: translateX(-100%);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .sidebar-close-btn {
+    display: block;
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
 }

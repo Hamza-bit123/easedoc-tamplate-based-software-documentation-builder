@@ -99,13 +99,15 @@ const TemplateDetails = () => {
                       {new Date(v.created_at).toLocaleDateString()}
                     </span>
                   </div>
-                  {v.is_active && <span className="current-badge">Current</span>}
-                  <button 
-                    className="view-version-btn"
-                    onClick={() => navigate(`/admin/templates/edit/${template.id}`)}
-                  >
-                    Edit
-                  </button>
+                  <div className="version-actions">
+                    {v.is_active && <span className="current-badge">Current</span>}
+                    <button 
+                      className="view-version-btn"
+                      onClick={() => navigate(`/admin/templates/edit/${template.id}`)}
+                    >
+                      Edit
+                    </button>
+                  </div>
                 </div>
               ))
             ) : (

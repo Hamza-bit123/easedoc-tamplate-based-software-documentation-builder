@@ -7,30 +7,41 @@
   flex-direction: column;
 }
 
-/* STICKY TOOLBAR */
+/* STICKY TOOLBAR — stacked two-row layout */
 .editor-toolbar {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-color);
-  padding: var(--space-4) var(--space-12);
+  padding: var(--space-3) var(--space-8);
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: var(--space-2);
   box-shadow: var(--shadow-sm);
 }
 
 [data-theme="dark"] .editor-toolbar {
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(15, 23, 42, 0.92);
 }
 
-.toolbar-left {
+/* Row 1 — icon + document name */
+.toolbar-row {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.toolbar-row-title {
+  gap: var(--space-3);
+}
+
+.toolbar-row-actions {
+  gap: var(--space-2);
+  flex-wrap: wrap;
 }
 
 .doc-icon-circle {
@@ -60,15 +71,8 @@
   margin-bottom: 2px;
 }
 
-.toolbar-left h1 {
-  font-size: var(--text-sm);
-  color: var(--text-muted);
-  margin: 0;
-  font-weight: 600;
-}
-
 .document-title-input {
-  width: min(420px, 38vw);
+  width: min(480px, 55vw);
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -86,11 +90,6 @@
   padding-left: var(--space-2);
 }
 
-.toolbar-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
 
 .divider {
   width: 1px;
@@ -319,6 +318,32 @@
 .close-preview:hover {
   background: var(--border-color);
   transform: rotate(90deg);
+}
+
+/* SCROLL TO TOP FAB */
+.scroll-top-fab {
+  position: fixed;
+  bottom: var(--space-8);
+  right: var(--space-8);
+  z-index: 200;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.4);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.scroll-top-fab:hover {
+  background: var(--primary-hover);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.5);
 }
 
 /* SAVING ANIMATION */
