@@ -21,6 +21,31 @@
   background: rgba(15, 23, 42, 0.85);
 }
 
+.header-left-section {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.header-sidebar-toggle {
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  transition: all 0.2s;
+  margin-left: calc(-1 * var(--space-2)); /* Align with padding */
+}
+
+.header-sidebar-toggle:hover {
+  background: var(--bg-body);
+  color: var(--primary);
+}
+
 .welcome-section h1 {
   font-size: var(--text-lg);
   font-weight: 700;
@@ -37,56 +62,28 @@
   gap: var(--space-6);
 }
 
-/* Theme Toggle Capsule */
-.theme-capsule {
-  width: 60px;
-  height: 32px;
-  background: var(--bg-body);
-  border-radius: var(--radius-full);
-  position: relative;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 var(--space-2);
-  border: 1px solid var(--border-color);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.desktop-icon {
+  display: block;
+}
+.mobile-icon {
+  display: none;
 }
 
-.theme-capsule:hover {
-  border-color: var(--primary-light);
-  box-shadow: var(--shadow-sm);
+@media (max-width: 768px) {
+  .desktop-icon {
+    display: none;
+  }
+  .mobile-icon {
+    display: block;
+  }
 }
 
-.toggle-icon {
-  font-size: 14px;
-  color: var(--text-muted);
-  z-index: 1;
-  transition: all 0.3s ease;
+@media (max-width: 480px) {
+  .user-display-name {
+    display: none;
+  }
 }
-
-.toggle-icon.visible {
-  color: var(--primary);
-}
-
-.capsule-dot {
-  position: absolute;
-  width: 24px;
-  height: 24px;
-  background: white;
-  border-radius: 50%;
-  box-shadow: var(--shadow-md);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid var(--border-color);
-}
-
-[data-theme="dark"] .capsule-dot {
-  background: var(--bg-card);
-}
-
-.capsule-dot.right {
-  transform: translateX(26px);
-}
+/* Removed Theme Toggle Capsule styles */
 
 /* Profile Section */
 .user-profile-capsule {

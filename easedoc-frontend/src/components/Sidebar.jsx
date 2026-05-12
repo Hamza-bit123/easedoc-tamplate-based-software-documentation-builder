@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import {
   MdOutlineDashboard,
@@ -7,12 +7,29 @@ import {
 } from "react-icons/md";
 import { FiUsers, FiSettings, FiFileText, FiLogOut, FiX } from "react-icons/fi";
 import { HiOutlineSparkles } from "react-icons/hi2";
+import { LuSun, LuMoon } from "react-icons/lu";
 import "./sidebar.css";
 import { AuthContext } from "../context/AuthContext";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const { user, logout } = useContext(AuthContext);
   const role = user?.role;
+
+  const [isDark, setIsDark] = useState(
+    document.body.getAttribute("data-theme") === "dark"
+  );
+
+  const toggleTheme = () => {
+    const newTheme = !isDark;
+    setIsDark(newTheme);
+    document.body.setAttribute("data-theme", newTheme ? "dark" : "light");
+  };
+
+  const handleNavClick = () => {
+    if (window.innerWidth <= 768 && isOpen && toggleSidebar) {
+      toggleSidebar();
+    }
+  };
   // Navigation configurations
   const menuItems = {
     admin: [
@@ -83,6 +100,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               key={item.path}
               to={item.path}
               end={item.path.split("/").length <= 2}
+              onClick={handleNavClick}
               className={({ isActive }) =>
                 isActive ? "nav-item active" : "nav-item"
               }
@@ -95,6 +113,12 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       </nav>
 
       <div className="sidebar-footer">
+        <button className="nav-item" onClick={toggleTheme}>
+          <span className="icon">
+            {isDark ? <LuSun size={22} /> : <LuMoon size={22} />}
+          </span>
+          <span>{isDark ? "Light Mode" : "Dark Mode"}</span>
+        </button>
         <button className="nav-item logout-btn" onClick={() => logout()}>
           <span className="icon"><FiLogOut size={22} /></span>
           <span>Log Out</span>

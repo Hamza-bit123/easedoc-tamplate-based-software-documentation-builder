@@ -1,32 +1,26 @@
-import React, { useState } from "react";
-import { LuSun, LuMoon } from "react-icons/lu";
+import React from "react";
+import { FiMenu, FiSidebar } from "react-icons/fi";
 import "./Header.css";
 
-const Header = ({ user }) => {
-  const [isDark, setIsDark] = useState(false);
-
+const Header = ({ user, toggleSidebar }) => {
   const { fullName } = user;
   const name = fullName?.split(" ")[0] || "User";
 
-  const toggleTheme = () => {
-    const newTheme = !isDark;
-    setIsDark(newTheme);
-    document.body.setAttribute("data-theme", newTheme ? "dark" : "light");
-  };
-
   return (
     <header className="top-header">
-      <div className="welcome-section">
-        <h1>Welcome {name} !</h1>
+      <div className="header-left-section">
+        {toggleSidebar && (
+          <button className="header-sidebar-toggle" onClick={toggleSidebar} title="Toggle Sidebar">
+            <FiSidebar size={24} className="desktop-icon" />
+            <FiMenu size={24} className="mobile-icon" />
+          </button>
+        )}
+        <div className="welcome-section">
+          <h1>Welcome {name} !</h1>
+        </div>
       </div>
 
       <div className="header-actions">
-        {/* Capsule Theme Toggle */}
-        <div className="theme-capsule" onClick={toggleTheme}>
-          <LuSun className={`toggle-icon ${!isDark ? "visible" : ""}`} />
-          <LuMoon className={`toggle-icon ${isDark ? "visible" : ""}`} />
-          <div className={`capsule-dot ${isDark ? "right" : "left"}`}></div>
-        </div>
 
         {/* Profile Section */}
         <div className="user-profile-capsule">

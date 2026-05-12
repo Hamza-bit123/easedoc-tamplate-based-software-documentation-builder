@@ -4,6 +4,14 @@ import "./CreateDocument.css";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { usePopup } from "../context/PopupContext";
+import { FiFileText, FiLayers, FiEdit3 } from "react-icons/fi";
+import { FaServer } from "react-icons/fa";
+
+const DOC_TYPES_INFO = {
+  1: { icon: <FiFileText size={24} />, description: "Software Requirements Specification." },
+  2: { icon: <FaServer size={24} />, description: "System Design Specification." },
+  3: { icon: <FiLayers size={24} />, description: "Software Design Document." }
+};
 
 const CreateDocument = () => {
   const [types, setTypes] = useState([]);
@@ -109,19 +117,26 @@ const CreateDocument = () => {
       <div className="card">
         <h2>Select Document Type</h2>
 
-        <div className="grid">
-          {types.map((t) => (
-            <div
-              key={t.id}
-              className={`box ${selectedType === t.id ? "active" : ""}`}
-              onClick={() => {
-                setSelectedType(t.id);
-                fetchStandards(t.id);
-              }}
-            >
-              {t.name}
-            </div>
-          ))}
+        <div className="doc-type-grid">
+          {types.map((t) => {
+            const info = DOC_TYPES_INFO[t.id] || { icon: <FiFileText size={24} />, description: "Standard Document." };
+            return (
+              <div
+                key={t.id}
+                className={`type-card ${selectedType === t.id ? "active" : ""}`}
+                onClick={() => {
+                  setSelectedType(t.id);
+                  fetchStandards(t.id);
+                }}
+              >
+                <div className="type-icon">{info.icon}</div>
+                <div className="type-info">
+                  <h3>{t.name}</h3>
+                  <p>{info.description}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -163,20 +178,23 @@ const CreateDocument = () => {
                   <h3>{t.name}</h3>
                   <p>{t.description}</p>
 
-                  <label className="document-name-field">
-                    <span>Document name</span>
-                    <input
-                      type="text"
-                      value={documentTitles[t.id] || ""}
-                      onChange={(e) =>
-                        setDocumentTitles({
-                          ...documentTitles,
-                          [t.id]: e.target.value,
-                        })
-                      }
-                      placeholder="Enter document name"
-                    />
-                  </label>
+                  <div className="document-name-container">
+                    <span className="doc-name-label">Document Title</span>
+                    <label className="document-name-field">
+                      <FiEdit3 className="edit-icon" />
+                      <input
+                        type="text"
+                        value={documentTitles[t.id] || ""}
+                        onChange={(e) =>
+                          setDocumentTitles({
+                            ...documentTitles,
+                            [t.id]: e.target.value,
+                          })
+                        }
+                        placeholder="Enter document title..."
+                      />
+                    </label>
+                  </div>
 
                   <div className="template-actions">
                     <button className="btn btn-primary" onClick={() => use_template(t.id)}>
@@ -184,7 +202,7 @@ const CreateDocument = () => {
                     </button>
                     {!t.base_template_id && (
                       <button
-                        className="btn-outline"
+                        className="btn btn-outline"
                         onClick={() => customizeTemplate(t.id)}
                       >
                         Customize

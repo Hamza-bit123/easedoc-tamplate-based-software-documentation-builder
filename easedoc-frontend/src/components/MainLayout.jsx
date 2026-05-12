@@ -38,10 +38,12 @@ const MainLayout = () => {
       <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
       <div className="main-wrapper">
-        <button className="sidebar-toggle-btn" onClick={toggleSidebar}>
-          <FiMenu size={24} />
-        </button>
-        {!isEditor && <Header user={user} />}
+        {isEditor && (
+          <button className="sidebar-toggle-btn" onClick={toggleSidebar}>
+            <FiMenu size={24} />
+          </button>
+        )}
+        {!isEditor && <Header user={user} toggleSidebar={toggleSidebar} />}
 
         <main className={`main-container ${isEditor ? 'editor-mode' : ''}`}>
           <Outlet />

@@ -43,11 +43,7 @@
   border-color: var(--primary);
 }
 
-/* Adjust header padding so it doesn't overlap with the fixed toggle button */
-.app-layout.sidebar-closed .top-header {
-  padding-left: 4.5rem;
-  transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
+/* The toggle button is now inside the header, so no padding needed */
 
 /* Hide toggle button if sidebar is open on desktop */
 .app-layout.sidebar-open .sidebar-toggle-btn {
@@ -90,8 +86,5 @@
     padding: 1.5rem;
   }
 
-  /* Make sure header accommodates the mobile toggle button */
-  .top-header {
-    padding-left: 4.5rem;
-  }
+  /* No header padding adjustment needed anymore */
 }
