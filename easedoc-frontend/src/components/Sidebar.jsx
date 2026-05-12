@@ -8,7 +8,7 @@ import {
 import { FiUsers, FiSettings, FiFileText, FiLogOut, FiX } from "react-icons/fi";
 import { HiOutlineSparkles } from "react-icons/hi2";
 import { LuSun, LuMoon } from "react-icons/lu";
-import "./sidebar.css";
+import "./Sidebar.css";
 import { AuthContext } from "../context/AuthContext";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
