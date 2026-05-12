@@ -15,9 +15,34 @@ import dashboardRoutes from "./routes/dashboard.routes.js";
 
 const app = express();
 
-app.use(cors());
+const requiredEnvVars = [
+  "DB_HOST",
+  "DB_PORT",
+  "DB_NAME",
+  "DB_USER",
+  "DB_PASSWORD",
+  "JWT_SECRET",
+  "FRONTEND_URL",
+];
+
+const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
+if (missingEnvVars.length > 0) {
+  console.error(
+    `Missing required environment variables: ${missingEnvVars.join(", ")}`
+  );
+  process.exit(1);
+}
+
+app.use(cors({
+  origin: process.env.FRONTEND_URL,
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.json({ limit: "10mb" }));
+
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok" });
+});
 
 app.use("/api/users", userRoutes);
 app.use("/api/templates", templateRoutes);
@@ -29,9 +54,7 @@ app.use("/api/export", exportRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  // Server is running
-});
+app.listen(PORT);
 
 app.get("/api/protected", verifyToken, (req, res) => {
   res.json({
