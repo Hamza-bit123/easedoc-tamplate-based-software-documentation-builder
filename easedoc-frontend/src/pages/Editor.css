@@ -1,5 +1,4 @@
-/* Editor.css - Global Styles remain untouched */
-
+/* --- Global Consistency (Unchanged) --- */
 .editor-workspace {
   background-color: var(--bg-body);
   min-height: 100vh;
@@ -7,216 +6,221 @@
   flex-direction: column;
 }
 
+/* --- THE HEADER OVERHAUL (Mobile First Logic) --- */
 .editor-toolbar {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--bg-card);
   border-bottom: 1px solid var(--border-color);
-  padding: var(--space-3) var(--space-8);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
   box-shadow: var(--shadow-sm);
 }
 
-.toolbar-row {
+.toolbar-row-title {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  flex-wrap: wrap;
+  margin-bottom: var(--space-3);
 }
 
+/* Icon adjustment for the circle shown in 1778650694662.jpeg */
 .doc-icon-circle {
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   background: linear-gradient(135deg, var(--primary), #6366f1);
   color: white;
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+  font-size: 1.2rem;
   flex-shrink: 0;
 }
 
 .title-group {
-  display: flex;
-  flex-direction: column;
+  flex: 1;
+  min-width: 0; /* Prevents title from pushing buttons off-screen */
+}
+
+.template-label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
 }
 
 .document-title-input {
-  width: min(480px, 55vw);
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  width: 100%;
+  border: none;
   background: transparent;
-  color: var(--text-main);
-  font-size: var(--text-lg);
+  font-size: 1rem;
   font-weight: 700;
-  padding: 2px var(--space-2) 2px 0;
+  color: var(--text-main);
+  padding: 0;
   outline: none;
 }
 
+/* Horizontal Actions Bar */
+.toolbar-row-actions {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.toolbar-row-actions::-webkit-scrollbar { display: none; }
+
+.toolbar-row-actions button {
+  white-space: nowrap;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-body);
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.btn-save {
+  background: var(--primary) !important;
+  color: white !important;
+  border: none !important;
+}
+
+/* --- THE PAGE & CONTENT (Fixing the 1778650694662.jpeg "Squeeze") --- */
 .document-scroller {
-  padding: var(--space-12) 0;
+  padding: var(--space-6) var(--space-3);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-8);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .page {
   background: white;
-  width: 850px;
+  width: 100%;
+  max-width: 850px; /* A4 Desktop size */
   min-height: 1122px;
-  padding: 80px 90px;
-  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  margin: 0 auto;
+  padding: 60px 50px; /* Standard internal margins */
+  box-shadow: var(--shadow-lg);
   position: relative;
-  transition: box-shadow 0.3s ease;
-  border-radius: 2px;
+  box-sizing: border-box; /* CRITICAL: ensures padding doesn't break width */
 }
 
-/* ============================================================
-   MOBILE OVERHAUL (Small Screens Only)
-   ============================================================ */
+.section-block {
+  margin-bottom: var(--space-8);
+  width: 100%;
+}
 
-@media (max-width: 880px) {
-  /* 1. Fix for vertical grey line and layout leaks */
-  .divider {
-    display: none !important;
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  margin-bottom: var(--space-1);
+}
+
+.section-number {
+  font-weight: 800;
+  color: var(--primary);
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.editor-title-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--text-main);
+  outline: none;
+  padding: 4px 0;
+  border-bottom: 1px solid transparent;
+}
+
+.editor-title-input:focus { border-bottom-color: var(--primary-glow); }
+
+/* The main textarea fix */
+.editor-input {
+  width: 100% !important; /* Force full width of the page padding */
+  display: block;
+  border: none;
+  outline: none;
+  background: transparent;
+  resize: none;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-main);
+  padding: var(--space-2) 0;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+/* --- THE FULLSCREEN PREVIEW --- */
+.preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: #f1f5f9; /* Solid backdrop */
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-modal {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-header {
+  height: 60px;
+  background: white;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-4);
+}
+
+.preview-frame {
+  flex: 1;
+  width: 100%;
+  border: none;
+  /* Tiny horizontal padding to show the "A4" edge as requested */
+  padding: var(--space-4) var(--space-2);
+  box-sizing: border-box;
+  background: #cbd5e1; /* Darker grey to make A4 white pop */
+}
+
+/* --- MOBILE SPECIFIC REFINEMENTS --- */
+@media (max-width: 768px) {
+  .page {
+    padding: var(--space-10) var(--space-6); /* Smaller internal margins for mobile */
+    min-height: auto;
+    border-radius: 0;
   }
 
-  /* 2. "Magic" Attractive Header */
   .editor-toolbar {
-    padding: var(--space-3) var(--space-4);
-    gap: var(--space-3);
-    background: var(--bg-card); /* Solid background for cleaner look on mobile */
-  }
-
-  .toolbar-row-title {
-    display: grid;
-    grid-template-columns: auto 1fr auto; /* Icon | Title | Save Button */
-    align-items: center;
-    width: 100%;
-    gap: var(--space-3);
+    padding: var(--space-4) var(--space-3);
   }
 
   .doc-icon-circle {
-    width: 36px;
-    height: 36px;
-    font-size: 1.1rem;
-    border-radius: var(--radius-sm);
-  }
-
-  .template-label {
-    font-size: 10px;
-    margin-bottom: 0;
-  }
-
-  .document-title-input {
-    width: 100%;
-    font-size: var(--text-md);
-    padding: 0;
-  }
-
-  /* Moves the Save Button to the top row for accessibility */
-  .btn-save {
-    padding: var(--space-2) var(--space-4) !important;
-    font-size: var(--text-xs) !important;
-    order: 3;
-    border-radius: var(--radius-full) !important;
-  }
-
-  /* Secondary Actions Bar - Horizontal Scrollable */
-  .toolbar-row-actions {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding: 2px 0 var(--space-2) 0;
-    margin-top: 2px;
-    gap: var(--space-2);
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; /* Hide scrollbar Firefox */
-  }
-
-  .toolbar-row-actions::-webkit-scrollbar {
-    display: none; /* Hide scrollbar Chrome/Safari */
-  }
-
-  .toolbar-row-actions button {
-    flex-shrink: 0;
-    padding: var(--space-2) var(--space-3) !important;
-    background: var(--bg-body);
-    font-size: 13px !important;
-  }
-
-  /* Hide original save in second row since we moved it */
-  .toolbar-row-actions .btn-save {
-    display: none;
-  }
-
-  /* 3. Document/Page Adjustments */
-  .document-scroller {
-    padding: var(--space-4) 0;
-    width: 100%;
-    overflow-x: hidden;
-  }
-
-  .page {
-    width: calc(100% - 24px); /* Full width minus small margin */
-    padding: var(--space-8) var(--space-5); /* Tighten page margins */
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--border-color);
-  }
-
-  .section-number {
-    min-width: 25px;
-    font-size: 0.95rem;
-  }
-
-  /* 4. "Blowing UI" Preview Modal - Full Screen */
-  .preview-overlay {
-    padding: 0; /* Remove gaps around the overlay */
-    background: var(--bg-body);
-  }
-
-  .preview-modal {
-    max-width: 100%;
-    height: 100%;
-    border-radius: 0;
-    border: none;
-  }
-
-  .preview-header {
-    padding: var(--space-3) var(--space-4);
-    background: var(--bg-card);
-    border-bottom: 1px solid var(--border-color);
-  }
-
-  .preview-header h3 {
-    font-size: var(--text-base);
-  }
-
-  .preview-frame {
-    background: #e2e8f0; /* Grey backdrop to make the white "A4" pop */
-    padding: var(--space-3) var(--space-2); /* Tiny padding to show edges of A4 */
-    box-sizing: border-box;
-  }
-
-  .close-preview {
     width: 32px;
     height: 32px;
-    background: var(--bg-body);
   }
 
-  /* Floating Scroll Top FAB positioning for mobile */
-  .scroll-top-fab {
-    bottom: var(--space-6);
-    right: var(--space-6);
-    width: 42px;
-    height: 42px;
+  .section-header {
+    align-items: flex-start;
   }
 }
