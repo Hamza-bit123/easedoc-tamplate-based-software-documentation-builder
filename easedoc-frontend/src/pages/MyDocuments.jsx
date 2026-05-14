@@ -5,6 +5,7 @@ import api from "../api/axios";
 import "./MyDocuments.css";
 import toast from "react-hot-toast";
 import { usePopup } from "../context/PopupContext";
+import EasDocLoader from "../components/EasDocLoader";
 
 const MyDocuments = () => {
   const [docs, setDocs] = useState([]);
@@ -81,10 +82,7 @@ const MyDocuments = () => {
 
   if (loading)
     return (
-      <div className="status-container">
-        <div className="loader"></div>
-        <p>Fetching your documents...</p>
-      </div>
+      <EasDocLoader message="Fetching your documents..." />
     );
 
   return (
