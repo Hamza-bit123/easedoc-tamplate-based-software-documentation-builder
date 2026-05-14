@@ -5,6 +5,7 @@ import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { AuthContext } from "../context/AuthContext";
 import "./MainLayout.css";
+import EasDocLoader from "./EasDocLoader";
 
 const MainLayout = () => {
   const { user, loading } = useContext(AuthContext);
@@ -23,7 +24,7 @@ const MainLayout = () => {
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <EasDocLoader message="Initializing system environment..." />;
   if (!user) return <Navigate to="/login" />;
 
   const isEditor = location.pathname.includes("/editor");
