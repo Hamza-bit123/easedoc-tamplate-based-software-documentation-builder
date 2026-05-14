@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import "./Dashboard.css";
+import EasDocLoader from "../components/EasDocLoader";
 
 const UserDashboard = () => {
   const [data, setData] = useState(null);
@@ -30,9 +31,7 @@ const UserDashboard = () => {
   }, []);
 
   if (loading) return (
-    <div className="flex-center p-20">
-      <div className="animate-pulse text-muted">Loading your workspace...</div>
-    </div>
+    <EasDocLoader message="Loading your workspace..." />
   );
   
   if (!data) return <div className="text-center p-20">Failed to load dashboard data.</div>;
