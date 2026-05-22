@@ -1,3 +1,35 @@
+const escapeHTML = (value) =>
+  `${value ?? ""}`
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const getSectionBlocks = (contentObj = {}) => {
+  if (Array.isArray(contentObj.blocks) && contentObj.blocks.length > 0) {
+    return contentObj.blocks.map((block) => ({
+      type: block.type || block.block_type || "paragraph",
+      text: block.text ?? block.text_content ?? "",
+      image: {
+        src: block.image?.src || block.image_src || "",
+        alt: block.image?.alt || block.image_alt || "",
+        caption: block.image?.caption || block.image_caption || "",
+      },
+      tableData: block.tableData || block.table_data || null,
+    }));
+  }
+
+  return [
+    {
+      type: "paragraph",
+      text: contentObj.content || "",
+      image: { src: "", alt: "", caption: "" },
+      tableData: null,
+    },
+  ];
+};
+
 const generatePrintHTML = (template, sections, isPDF = false) => {
   const styles = isPDF
     ? `
@@ -5,7 +37,7 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
       margin: 0;
       padding: 0;
       background: white;
-      font-family: ${template.default_font_family};
+      font-family: ${escapeHTML(template.default_font_family)};
     }
 
     .page {
@@ -41,7 +73,7 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
       display: flex;
       flex-direction: column;
       align-items: center;
-      font-family: ${template.default_font_family};
+      font-family: ${escapeHTML(template.default_font_family)};
     }
 
     .page {
@@ -70,26 +102,22 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
     }
   `;
 
-  const PAGE_HEIGHT = 1122; // A4 height in px at 96dpi
-
+  const PAGE_HEIGHT = 1122;
   const paddingTop = template.page_margin_top * 3.78;
   const paddingBottom = template.page_margin_bottom * 3.78;
   const paddingLeft = template.page_margin_left * 3.78;
   const paddingRight = template.page_margin_right * 3.78;
+  const CONTENT_HEIGHT = PAGE_HEIGHT - 15;
 
-  // Use a consistent content height, leaving a bit of buffer for the footer
-  const CONTENT_HEIGHT = PAGE_HEIGHT - 15; 
-
-  const addNumbering = (sections) => {
+  const addNumbering = (sectionsList) => {
     const counters = {};
 
-    return sections.map((sec) => {
+    return sectionsList.map((sec) => {
       const level = sec.level || 1;
 
       if (!counters[level]) counters[level] = 0;
       counters[level]++;
 
-      // reset deeper levels
       for (let i = level + 1; i <= 10; i++) {
         counters[i] = 0;
       }
@@ -104,15 +132,12 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
   };
 
   const numberedSections = addNumbering(template.sections);
-
-  // ===== CREATE MEASURE =====
   const measure = document.createElement("div");
   measure.style.position = "absolute";
   measure.style.visibility = "hidden";
-  measure.style.width = "794px"; // A4 width
+  measure.style.width = "794px";
   measure.style.boxSizing = "border-box";
   measure.style.fontFamily = template.default_font_family;
-  // measure.style.height = `${CONTENT_HEIGHT}px`; // Don't fix height for measurement
   measure.style.padding = `${paddingTop}px ${paddingRight}px ${paddingBottom}px ${paddingLeft}px`;
   measure.style.overflow = "hidden";
 
@@ -123,64 +148,100 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
     return measure.scrollHeight;
   };
 
-  // ===== HELPERS =====
-  const getTitleHTML = (sec, title) => {
-    return `
-      <h2 style="
-        font-size:${sec.title_font_size}px;
-        font-weight:${sec.title_font_weight};
-        text-align:${sec.title_text_align};
-        padding-left:${sec.padding_left + (sec.level - 1) * 20}px;
-        margin-top:${sec.margin_top}px;
-        margin-bottom:${sec.margin_bottom}px;
-        line-height: 1.2;
-      ">
-        ${sec.number}. ${title}
-      </h2>
-    `;
-  };
+  const getTitleHTML = (sec, title) => `
+    <h2 style="
+      font-size:${sec.title_font_size}px;
+      font-weight:${sec.title_font_weight};
+      text-align:${sec.title_text_align};
+      padding-left:${sec.padding_left + (sec.level - 1) * 20}px;
+      margin-top:${sec.margin_top}px;
+      margin-bottom:${sec.margin_bottom}px;
+      line-height: 1.2;
+    ">
+      ${sec.number}. ${escapeHTML(title)}
+    </h2>
+  `;
 
   const getParaHTML = (sec, text) => {
     const indent = sec.padding_left + (sec.level - 1) * 20;
 
-    // 👉 LIST ITEM
     if (sec.list_type === "bullet" || sec.list_type === "numbered") {
       return `
-      <li style="
+        <li style="
+          font-size:${sec.body_font_size}px;
+          font-weight:${sec.body_font_weight};
+          text-align:${sec.body_text_align};
+          line-height:${sec.line_height};
+          margin-left:${indent}px;
+          margin-bottom: 5px;
+        ">
+          ${escapeHTML(text)}
+        </li>
+      `;
+    }
+
+    return `
+      <p style="
         font-size:${sec.body_font_size}px;
         font-weight:${sec.body_font_weight};
         text-align:${sec.body_text_align};
         line-height:${sec.line_height};
-        margin-left:${indent}px;
-        margin-bottom: 5px;
+        padding-left:${indent}px;
+        margin-top: 0;
+        margin-bottom:10px;
       ">
-        ${text}
-      </li>
+        ${escapeHTML(text)}
+      </p>
     `;
+  };
+
+  const getImageHTML = (sec, block) => {
+    const indent = sec.padding_left + (sec.level - 1) * 20;
+    const src = block.image?.src || "";
+    const caption = block.image?.caption || "";
+
+    if (!src && !caption) {
+      return "";
     }
 
-    // 👉 NORMAL PARAGRAPH
     return `
-    <p style="
-      font-size:${sec.body_font_size}px;
-      font-weight:${sec.body_font_weight};
-      text-align:${sec.body_text_align};
-      line-height:${sec.line_height};
-      padding-left:${indent}px;
-      margin-top: 0;
-      margin-bottom:10px;
-    ">
-      ${text}
-    </p>
-  `;
+      <figure style="
+        padding-left:${indent}px;
+        margin: 12px 0 16px 0;
+        text-align:center;
+        min-height:${caption ? 220 : 190}px;
+      ">
+        ${
+          src
+            ? `<img src="${escapeHTML(src)}" alt="${escapeHTML(block.image?.alt || "")}" style="
+                display:block;
+                max-width:100%;
+                max-height:280px;
+                object-fit:contain;
+                margin:0 auto;
+              " />`
+            : ""
+        }
+        ${
+          caption
+            ? `<figcaption style="
+                font-size:${Math.max(10, sec.body_font_size - 1)}px;
+                color:#4b5563;
+                margin-top:6px;
+                font-style:italic;
+              ">${escapeHTML(caption)}</figcaption>`
+            : ""
+        }
+      </figure>
+    `;
   };
-  // ===== PAGINATION =====
+
   const pages = [];
   let currentHTML = "";
 
   const pushPage = () => {
     if (currentHTML.trim()) {
-        pages.push(currentHTML);
+      pages.push(currentHTML);
     }
     currentHTML = "";
   };
@@ -204,13 +265,10 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
     };
   };
 
-  // ===== LOOP =====
   numberedSections.forEach((sec) => {
     const contentObj = sections[sec.id];
-
     const title = contentObj?.title || sec.title;
-    const content = contentObj?.content || "";
-
+    const blocks = getSectionBlocks(contentObj);
     const titleHTML = getTitleHTML(sec, title);
 
     if (getHeight(currentHTML + titleHTML) > CONTENT_HEIGHT) {
@@ -219,52 +277,44 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
 
     currentHTML += titleHTML;
 
-    const paragraphs = content.split("\n");
-
     let listBuffer = [];
     let currentListType = null;
     let listCounter = 1;
     let listStart = 1;
+
     const flushList = () => {
       if (listBuffer.length === 0) return;
 
       const tag = currentListType === "numbered" ? "ol" : "ul";
-
       const startAttr =
         currentListType === "numbered" ? `start="${listStart}"` : "";
-
       const listHTML = `
-  <${tag} ${startAttr} style="margin:0 0 10px 0; padding-left:20px;">
-    ${listBuffer.join("")}
-  </${tag}>
-`;
+        <${tag} ${startAttr} style="margin:0 0 10px 0; padding-left:20px;">
+          ${listBuffer.join("")}
+        </${tag}>
+      `;
 
       if (getHeight(currentHTML + listHTML) > CONTENT_HEIGHT) {
         pushPage();
       }
 
       currentHTML += listHTML;
-
       listBuffer = [];
       currentListType = null;
     };
 
-    paragraphs.forEach((p) => {
-      if (!p.trim()) return;
+    const renderParagraphText = (text) => {
+      if (!text.trim()) return;
 
       const isList = sec.list_type === "bullet" || sec.list_type === "numbered";
 
-      // 👉 LIST ITEM
       if (isList) {
         if (currentListType && currentListType !== sec.list_type) {
           flushList();
         }
 
         currentListType = sec.list_type;
-
-        const liHTML = getParaHTML(sec, p);
-        // 🔥 CHECK overflow BEFORE adding
-
+        const liHTML = getParaHTML(sec, text);
         const testTag = sec.list_type === "numbered" ? "ol" : "ul";
 
         if (
@@ -282,45 +332,63 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
         if (sec.list_type === "numbered") {
           listCounter++;
         }
+        return;
       }
 
-      // 👉 NORMAL PARAGRAPH
-      else {
-        flushList();
+      flushList();
 
-        let remaining = p;
+      let remaining = text;
+      while (remaining.length > 0) {
+        const paraHTML = getParaHTML(sec, remaining);
 
-        while (remaining.length > 0) {
-          const paraHTML = getParaHTML(sec, remaining);
+        if (getHeight(currentHTML + paraHTML) <= CONTENT_HEIGHT) {
+          currentHTML += paraHTML;
+          remaining = "";
+        } else {
+          const { fit, rest } = splitText(sec, remaining);
 
-          if (getHeight(currentHTML + paraHTML) <= CONTENT_HEIGHT) {
-            currentHTML += paraHTML;
-            remaining = "";
-          } else {
-            const { fit, rest } = splitText(sec, remaining);
-
-            if (!fit) {
-              // If not even one word fits, we must push page and try again
-              pushPage();
-              // To avoid infinite loop if a single word is too long (rare but possible)
-              if (getHeight(getParaHTML(sec, remaining.split(" ")[0])) > CONTENT_HEIGHT) {
-                  // Extremely long word, just force it
-                  currentHTML += getParaHTML(sec, remaining);
-                  remaining = "";
-              }
-              continue;
-            }
-
-            currentHTML += getParaHTML(sec, fit);
-            remaining = rest;
-
+          if (!fit) {
             pushPage();
+            if (
+              getHeight(getParaHTML(sec, remaining.split(" ")[0])) >
+              CONTENT_HEIGHT
+            ) {
+              currentHTML += getParaHTML(sec, remaining);
+              remaining = "";
+            }
+            continue;
           }
+
+          currentHTML += getParaHTML(sec, fit);
+          remaining = rest;
+          pushPage();
         }
       }
+    };
+
+    blocks.forEach((block) => {
+      if (block.type === "image") {
+        flushList();
+        const imageHTML = getImageHTML(sec, block);
+
+        if (!imageHTML) return;
+
+        if (getHeight(currentHTML + imageHTML) > CONTENT_HEIGHT) {
+          pushPage();
+        }
+
+        currentHTML += imageHTML;
+        return;
+      }
+
+      if (block.type === "table") {
+        flushList();
+        return;
+      }
+
+      `${block.text || ""}`.split("\n").forEach(renderParagraphText);
     });
 
-    // flush at end
     flushList();
   });
 
@@ -328,7 +396,6 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
 
   document.body.removeChild(measure);
 
-  // ===== FINAL HTML =====
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -346,11 +413,15 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
   </style>
 </head>
 <body>
-  ${pages.map((p, i) => `
+  ${pages
+    .map(
+      (p, i) => `
     <div class="page">
       ${p}
       <div class="page-number">Page ${i + 1} of ${pages.length}</div>
-    </div>`).join("")}
+    </div>`,
+    )
+    .join("")}
 </body>
 </html>`;
 };

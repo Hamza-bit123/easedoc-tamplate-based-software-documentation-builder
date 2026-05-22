@@ -24,6 +24,22 @@ Those template formatting/page settings belong to `template_versions`, because e
 - `template_section_versions`
 - `documents`
 - `document_sections`
+- `document_section_blocks`
+
+`document_section_blocks` stores the ordered body content for each saved
+section. Paragraphs, images, and future table blocks are separate rows so image
+content is never embedded inside paragraph text.
+
+## Migrations
+
+For an existing database, run:
+
+```sql
+SOURCE database/2026-05-22-add-document-section-blocks.sql;
+```
+
+The migration preserves `document_sections.content` and copies any existing
+section text into a paragraph block when that section has no blocks yet.
 
 ## Install
 

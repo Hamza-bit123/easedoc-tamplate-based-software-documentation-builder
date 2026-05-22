@@ -14,6 +14,7 @@ CREATE DATABASE `easedoc`
 USE `easedoc`;
 
 SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS `document_section_blocks`;
 DROP TABLE IF EXISTS `document_sections`;
 DROP TABLE IF EXISTS `documents`;
 DROP TABLE IF EXISTS `template_section_versions`;
@@ -201,6 +202,28 @@ CREATE TABLE `document_sections` (
     FOREIGN KEY (`template_section_version_id`) REFERENCES `template_section_versions` (`id`)
     ON UPDATE CASCADE
     ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `document_section_blocks` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `document_section_id` int(11) NOT NULL,
+  `block_type` enum('paragraph','image','table') NOT NULL DEFAULT 'paragraph',
+  `block_order` int(11) NOT NULL,
+  `text_content` text DEFAULT NULL,
+  `image_src` longtext DEFAULT NULL,
+  `image_alt` varchar(255) DEFAULT NULL,
+  `image_caption` text DEFAULT NULL,
+  `table_data` longtext DEFAULT NULL,
+  `metadata` longtext DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_document_section_blocks_order` (`document_section_id`, `block_order`),
+  KEY `idx_document_section_blocks_section_type` (`document_section_id`, `block_type`),
+  CONSTRAINT `fk_document_section_blocks_section`
+    FOREIGN KEY (`document_section_id`) REFERENCES `document_sections` (`id`)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 INSERT INTO `users`

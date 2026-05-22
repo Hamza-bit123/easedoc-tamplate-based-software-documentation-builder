@@ -14,7 +14,7 @@ const requiredDbEnvVars = [
 const missingDbEnvVars = requiredDbEnvVars.filter((key) => !process.env[key]);
 if (missingDbEnvVars.length > 0) {
   console.error(
-    `Database configuration error. Missing: ${missingDbEnvVars.join(", ")}`
+    `Database configuration error. Missing: ${missingDbEnvVars.join(", ")}`,
   );
   process.exit(1);
 }

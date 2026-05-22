@@ -6,7 +6,56 @@ import {
   HeadingLevel,
   AlignmentType,
   TextRun,
+  ImageRun,
 } from "docx";
+
+const getSectionBlocks = (contentObj = {}) => {
+  if (Array.isArray(contentObj.blocks) && contentObj.blocks.length > 0) {
+    return contentObj.blocks.map((block) => ({
+      type: block.type || block.block_type || "paragraph",
+      text: block.text ?? block.text_content ?? "",
+      image: {
+        src: block.image?.src || block.image_src || "",
+        alt: block.image?.alt || block.image_alt || "",
+        caption: block.image?.caption || block.image_caption || "",
+      },
+      tableData: block.tableData || block.table_data || null,
+    }));
+  }
+
+  return [
+    {
+      type: "paragraph",
+      text: contentObj.content || "",
+      image: { src: "", alt: "", caption: "" },
+      tableData: null,
+    },
+  ];
+};
+
+const imageRunFromDataUrl = (src) => {
+  const match = `${src}`.match(/^data:image\/([a-zA-Z0-9.+-]+);base64,(.+)$/);
+
+  if (!match) {
+    return null;
+  }
+
+  const imageType = match[1].toLowerCase() === "jpeg" ? "jpg" : match[1].toLowerCase();
+  const supportedTypes = new Set(["png", "jpg", "gif", "bmp"]);
+
+  if (!supportedTypes.has(imageType)) {
+    return null;
+  }
+
+  return new ImageRun({
+    type: imageType,
+    data: Buffer.from(match[2], "base64"),
+    transformation: {
+      width: 440,
+      height: 260,
+    },
+  });
+};
 
 export const exportPDFService = async (html, res) => {
   const browser = await puppeteer.launch({
@@ -89,7 +138,7 @@ export const exportWordService = async (template, sectionsMap, res) => {
       const contentObj = sectionsMap[sec.id];
 
       const title = contentObj?.title || sec.title;
-      const content = contentObj?.content || "";
+      const blocks = getSectionBlocks(contentObj);
 
       const indent = (sec.padding_left || 0) + (sec.level - 1) * 200;
 
@@ -118,90 +167,106 @@ export const exportWordService = async (template, sectionsMap, res) => {
         }),
       );
 
-      const paragraphs = content.split("\n");
+      const pushParagraphText = (text) => {
+        if (!text.trim()) return;
 
-      paragraphs.forEach((p) => {
-        if (!p.trim()) return;
+        const isListStyle =
+          sec.list_type === "bullet" || sec.list_type === "numbered";
 
-        // ================= LIST =================
-        if (sec.list_type === "bullet") {
-          children.push(
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: p,
-                  size: sec.body_font_size * 2,
-                  color: "000000",
-                }),
-              ],
-              bullet: { level: 0 },
-              alignment: getAlignment(sec.body_text_align),
-
-              spacing: {
-                before: 80,
-                after: 100,
-                line: sec.line_height * 240,
-              },
-
-              indent: {
-                left: indent,
-              },
+        const baseOptions = {
+          children: [
+            new TextRun({
+              text,
+              size: sec.body_font_size * 2,
+              color: "000000",
             }),
-          );
-        } else if (sec.list_type === "numbered") {
+          ],
+          alignment: getAlignment(sec.body_text_align),
+          spacing: {
+            before: 80,
+            after: isListStyle ? 100 : 150,
+            line: sec.line_height * 240,
+          },
+          indent: {
+            left: indent,
+          },
+        };
+
+        if (sec.list_type === "bullet") {
+          children.push(new Paragraph({ ...baseOptions, bullet: { level: 0 } }));
+          return;
+        }
+
+        if (sec.list_type === "numbered") {
           children.push(
             new Paragraph({
-              children: [
-                new TextRun({
-                  text: p,
-                  size: sec.body_font_size * 2,
-                  color: "000000",
-                }),
-              ],
+              ...baseOptions,
               numbering: {
                 reference: "default-numbering",
                 level: 0,
               },
-              alignment: getAlignment(sec.body_text_align),
-
-              spacing: {
-                before: 80,
-                after: 100,
-                line: sec.line_height * 240,
-              },
-
-              indent: {
-                left: indent,
-              },
             }),
           );
+          return;
         }
 
-        // ================= NORMAL PARAGRAPH =================
-        else {
-          children.push(
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: p,
-                  size: sec.body_font_size * 2,
-                  color: "000000",
-                }),
-              ],
-              alignment: getAlignment(sec.body_text_align),
+        children.push(new Paragraph(baseOptions));
+      };
 
-              spacing: {
-                before: 80,
-                after: 150,
-                line: sec.line_height * 240,
-              },
+      blocks.forEach((block) => {
+        if (block.type === "image") {
+          const imageRun = imageRunFromDataUrl(block.image.src);
 
-              indent: {
-                left: indent,
-              },
-            }),
-          );
+          if (imageRun) {
+            children.push(
+              new Paragraph({
+                children: [imageRun],
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 120, after: 80 },
+              }),
+            );
+          } else if (block.image.src) {
+            children.push(
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: block.image.caption || block.image.src,
+                    size: sec.body_font_size * 2,
+                    color: "000000",
+                  }),
+                ],
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 120, after: 80 },
+              }),
+            );
+          }
+
+          if (block.image.caption) {
+            children.push(
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: block.image.caption,
+                    size: Math.max(18, (sec.body_font_size - 1) * 2),
+                    italics: true,
+                    color: "4B5563",
+                  }),
+                ],
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 0, after: 120 },
+              }),
+            );
+          }
+
+          return;
         }
+
+        if (block.type === "table") {
+          pushParagraphText("");
+          return;
+        }
+
+        `${block.text || ""}`.split("\n").forEach(pushParagraphText);
       });
     });
 

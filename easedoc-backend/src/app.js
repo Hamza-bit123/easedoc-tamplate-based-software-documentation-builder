@@ -28,16 +28,17 @@ const requiredEnvVars = [
 const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
 if (missingEnvVars.length > 0) {
   console.error(
-    `Missing required environment variables: ${missingEnvVars.join(", ")}`
+    `Missing required environment variables: ${missingEnvVars.join(", ")}`,
   );
   process.exit(1);
 }
 
-app.use(cors({
-  origin: process.env.FRONTEND_URL,
-  credentials: true
-}));
-app.use(express.json());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+  }),
+);
 app.use(express.json({ limit: "10mb" }));
 
 app.get("/api/health", (req, res) => {

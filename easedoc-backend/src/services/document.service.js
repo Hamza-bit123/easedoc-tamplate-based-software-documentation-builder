@@ -152,6 +152,28 @@ const repairDocumentSections = async (documentId, versionId) => {
   }
 };
 
+const ensureDocumentSectionBlocks = async (documentId, versionId) => {
+  await db.promise().query(
+    `INSERT INTO document_section_blocks
+       (document_section_id, block_type, block_order, text_content)
+     SELECT
+       ds.id,
+       'paragraph',
+       1,
+       ds.content
+     FROM document_sections ds
+     JOIN template_section_versions tsv
+       ON ds.template_section_version_id = tsv.id
+     LEFT JOIN document_section_blocks b
+       ON b.document_section_id = ds.id
+     WHERE ds.document_id = ?
+       AND tsv.template_version_id = ?
+       AND b.id IS NULL
+       AND COALESCE(TRIM(ds.content), '') <> ''`,
+    [documentId, versionId],
+  );
+};
+
 const ensureDocumentVersion = async (document) => {
   if (!document) {
     return document;
@@ -169,6 +191,7 @@ const ensureDocumentVersion = async (document) => {
   }
 
   await repairDocumentSections(document.id, version.id);
+  await ensureDocumentSectionBlocks(document.id, version.id);
 
   return {
     ...document,
@@ -224,21 +247,40 @@ export const validateDocumentService = async (documentId) => {
         tsv.id,
         tsv.title, 
         tsv.is_required, 
-        ds.content
+        ds.content,
+        SUM(
+          CASE
+            WHEN b.block_type = 'paragraph'
+              AND COALESCE(TRIM(b.text_content), '') <> '' THEN 1
+            WHEN b.block_type = 'image'
+              AND COALESCE(TRIM(b.image_src), '') <> '' THEN 1
+            WHEN b.block_type = 'table'
+              AND COALESCE(TRIM(b.table_data), '') <> '' THEN 1
+            ELSE 0
+          END
+        ) AS filled_blocks
       FROM document_sections ds
       JOIN documents d ON ds.document_id = d.id
       JOIN template_section_versions tsv 
         ON ds.template_section_version_id = tsv.id
       JOIN template_versions tv
         ON tsv.template_version_id = tv.id AND d.template_version_id = tv.id
+      LEFT JOIN document_section_blocks b
+        ON b.document_section_id = ds.id
       WHERE ds.document_id = ?
+      GROUP BY tsv.id, tsv.title, tsv.is_required, ds.content
     `;
 
     db.query(sql, [documentId], (err, results) => {
       if (err) return reject(err);
 
       const errors = results
-        .filter((r) => r.is_required && (!r.content || r.content.trim() === ""))
+        .filter(
+          (r) =>
+            r.is_required &&
+            !hasText(r.content) &&
+            Number(r.filled_blocks || 0) === 0,
+        )
         .map((r) => ({
           section_id: r.id,
           message: `${r.title} is required`,
