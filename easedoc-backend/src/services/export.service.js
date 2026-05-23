@@ -8,6 +8,11 @@ import {
   TextRun,
   ImageRun,
 } from "docx";
+import {
+  buildSectionNumbers,
+  computeFigureLabels,
+  formatExportedFigureCaption,
+} from "../utils/figureNumbering.js";
 
 const getSectionBlocks = (contentObj = {}) => {
   if (Array.isArray(contentObj.blocks) && contentObj.blocks.length > 0) {
@@ -92,30 +97,8 @@ export const exportPDFService = async (html, res) => {
 
 export const exportWordService = async (template, sectionsMap, res) => {
   try {
-    // ===== NUMBERING (same as preview)
-    const addNumbering = (sections) => {
-      const counters = {};
-
-      return sections.map((sec) => {
-        const level = sec.level || 1;
-
-        if (!counters[level]) counters[level] = 0;
-        counters[level]++;
-
-        for (let i = level + 1; i <= 10; i++) {
-          counters[i] = 0;
-        }
-
-        const number = Object.keys(counters)
-          .slice(0, level)
-          .map((lvl) => counters[lvl] || 0)
-          .join(".");
-
-        return { ...sec, number };
-      });
-    };
-
-    template.sections = addNumbering(template.sections);
+    template.sections = buildSectionNumbers(template.sections);
+    const figureLabels = computeFigureLabels(template, sectionsMap).labels;
 
     const children = [];
 
@@ -213,47 +196,39 @@ export const exportWordService = async (template, sectionsMap, res) => {
         children.push(new Paragraph(baseOptions));
       };
 
-      blocks.forEach((block) => {
+      blocks.forEach((block, blockIndex) => {
         if (block.type === "image") {
-          const imageRun = imageRunFromDataUrl(block.image.src);
+          const figureKey = `${sec.id}:${block.clientId || block.id || blockIndex}`;
+          const figureLabel = figureLabels.get(figureKey) || "Figure";
+          const captionText = formatExportedFigureCaption(
+            figureLabel,
+            block.image?.caption || "",
+          );
+          const imageRun = imageRunFromDataUrl(block.image?.src || "");
 
           if (imageRun) {
             children.push(
               new Paragraph({
                 children: [imageRun],
                 alignment: AlignmentType.CENTER,
-                spacing: { before: 120, after: 80 },
-              }),
-            );
-          } else if (block.image.src) {
-            children.push(
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: block.image.caption || block.image.src,
-                    size: sec.body_font_size * 2,
-                    color: "000000",
-                  }),
-                ],
-                alignment: AlignmentType.CENTER,
-                spacing: { before: 120, after: 80 },
+                spacing: { before: 160, after: 100 },
               }),
             );
           }
 
-          if (block.image.caption) {
+          if (captionText || block.image?.src) {
             children.push(
               new Paragraph({
                 children: [
                   new TextRun({
-                    text: block.image.caption,
+                    text: captionText || figureLabel,
                     size: Math.max(18, (sec.body_font_size - 1) * 2),
                     italics: true,
-                    color: "4B5563",
+                    color: "374151",
                   }),
                 ],
                 alignment: AlignmentType.CENTER,
-                spacing: { before: 0, after: 120 },
+                spacing: { before: imageRun ? 60 : 160, after: 160 },
               }),
             );
           }

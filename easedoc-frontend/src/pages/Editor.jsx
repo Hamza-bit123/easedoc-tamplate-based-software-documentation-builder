@@ -1,8 +1,14 @@
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useParams, useBlocker } from "react-router-dom";
 import api from "../api/axios";
 import "./Editor.css";
 import generatePrintHTML from "../utils/generatePrintHTML";
+import {
+  buildSectionNumbers,
+  computeFigureLabels,
+  getDefaultFigureCaption,
+  parseSeedBlocks,
+} from "../utils/figureNumbering";
 import {
   FiArrowDown,
   FiArrowUp,
@@ -17,6 +23,8 @@ import {
   FiType,
   FiUpload,
   FiX,
+  FiSettings,
+  FiCheckCircle
 } from "react-icons/fi";
 import { BiSolidFileDoc } from "react-icons/bi";
 import toast from "react-hot-toast";
@@ -32,16 +40,19 @@ const createParagraphBlock = (text = "") => ({
   tableData: null,
 });
 
-const createImageBlock = () => ({
+const createImageBlock = (caption = "") => ({
   clientId: newBlockId(),
   type: "image",
   text: "",
-  image: { src: "", alt: "", caption: "" },
+  image: { src: "", alt: "", caption },
   tableData: null,
+  metadata: { captionAuto: Boolean(caption), captionUserEdited: false },
 });
 
-const createBlockByType = (type) =>
-  type === "image" ? createImageBlock() : createParagraphBlock();
+const createBlockByType = (type, sectionTitle = "") =>
+  type === "image"
+    ? createImageBlock(getDefaultFigureCaption(sectionTitle))
+    : createParagraphBlock();
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
@@ -83,6 +94,42 @@ const normalizeBlock = (block = {}) => {
     tableData: null,
     metadata: block.metadata || null,
   };
+};
+
+const blocksFromSeed = (seedBlocks, sectionTitle = "") => {
+  const seeds = parseSeedBlocks(seedBlocks);
+  if (!seeds) return null;
+
+  return seeds.map((seed) => {
+    if (seed.type === "image") {
+      const caption = seed.caption || getDefaultFigureCaption(sectionTitle);
+      return {
+        ...createImageBlock(caption),
+        metadata: {
+          optional: Boolean(seed.optional),
+          captionAuto: true,
+          captionUserEdited: false,
+        },
+      };
+    }
+
+    return createParagraphBlock();
+  });
+};
+
+const resolveInitialSectionBlocks = (templateSection, saved = {}) => {
+  if (Array.isArray(saved.blocks) && saved.blocks.length > 0) {
+    return normalizeSectionBlocks(saved);
+  }
+
+  if (`${saved.content || ""}`.trim()) {
+    return normalizeSectionBlocks(saved);
+  }
+
+  const seeded = blocksFromSeed(templateSection.seed_blocks, templateSection.title);
+  if (seeded) return seeded;
+
+  return [createParagraphBlock()];
 };
 
 const normalizeSectionBlocks = (section = {}) => {
@@ -127,6 +174,47 @@ const blocksToLegacyContent = (blocks) =>
     .map((block) => block.text || "")
     .join("\n");
 
+const compressImageToDataUrl = (file, maxWidth = 1400) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const image = new Image();
+      image.onload = () => {
+        const scale = Math.min(1, maxWidth / image.width);
+        const width = Math.max(1, Math.round(image.width * scale));
+        const height = Math.max(1, Math.round(image.height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext("2d");
+        if (!context) {
+          resolve(reader.result || "");
+          return;
+        }
+        context.drawImage(image, 0, 0, width, height);
+        const outputType = file.type === "image/png" ? "image/png" : "image/jpeg";
+        resolve(canvas.toDataURL(outputType, 0.86));
+      };
+      image.onerror = () => reject(new Error("Invalid image file"));
+      image.src = reader.result;
+    };
+    reader.onerror = () => reject(new Error("Could not read image file"));
+    reader.readAsDataURL(file);
+  });
+
+const getCaretTop = (textarea) => {
+  if (!textarea) return 4;
+
+  const style = window.getComputedStyle(textarea);
+  const lineHeight = parseFloat(style.lineHeight) || 22;
+  const paddingTop = parseFloat(style.paddingTop) || 3;
+  const textBefore = textarea.value.substring(0, textarea.selectionStart ?? 0);
+  const lineCount = Math.max(1, textBefore.split("\n").length);
+
+  // Subtract half the insert button height (13px) to center button on the cursor line
+  return paddingTop + (lineCount - 1) * lineHeight - 13;
+};
+
 const Editor = () => {
   const { documentId } = useParams();
 
@@ -137,14 +225,43 @@ const Editor = () => {
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState("draft");
   const [documentTitle, setDocumentTitle] = useState("");
+  const [isDirty, setIsDirty] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [openAddMenu, setOpenAddMenu] = useState(null);
   const [insertionTarget, setInsertionTarget] = useState(null);
+  const [focusedParagraph, setFocusedParagraph] = useState(null);
   const textareaRefs = useRef({});
   const imageUrlRefs = useRef({});
+  const imageFileInputRefs = useRef({});
   const pendingFocusRef = useRef(null);
+  const paragraphBlurTimeoutRef = useRef(null);
+  const toolsMenuTimerRef = useRef(null);
+  const [showToolsMenu, setShowToolsMenu] = useState(false);
   const PAGE_HEIGHT = 1122;
+
+  useEffect(() => {
+    if (showToolsMenu) {
+      if (toolsMenuTimerRef.current) clearTimeout(toolsMenuTimerRef.current);
+      toolsMenuTimerRef.current = setTimeout(() => {
+        setShowToolsMenu(false);
+      }, 30000);
+    }
+    return () => {
+      if (toolsMenuTimerRef.current) clearTimeout(toolsMenuTimerRef.current);
+    };
+  }, [showToolsMenu]);
+
+  const resetToolsTimer = () => {
+    if (!showToolsMenu) return;
+    if (toolsMenuTimerRef.current) clearTimeout(toolsMenuTimerRef.current);
+    toolsMenuTimerRef.current = setTimeout(() => setShowToolsMenu(false), 30000);
+  };
+
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      isDirty && currentLocation.pathname !== nextLocation.pathname
+  );
 
   const getBlocksForSection = useCallback(
     (sectionId) =>
@@ -234,10 +351,10 @@ const Editor = () => {
 
       const map = {};
       temp.data.sections.forEach((templateSection) => {
-        const saved = savedSections.get(templateSection.id);
+        const saved = savedSections.get(templateSection.id) || {};
         map[templateSection.id] = {
-          title: saved?.custom_title || "",
-          blocks: normalizeSectionBlocks(saved),
+          title: saved.custom_title || "",
+          blocks: resolveInitialSectionBlocks(templateSection, saved),
         };
       });
 
@@ -258,6 +375,7 @@ const Editor = () => {
   }, [loadEditor]);
 
   const handleTitleChange = (id, value) => {
+    setIsDirty(true);
     setSections((prev) => ({
       ...prev,
       [id]: {
@@ -268,6 +386,7 @@ const Editor = () => {
   };
 
   const updateBlocks = (sectionId, updater) => {
+    setIsDirty(true);
     setSections((prev) => {
       const current = prev[sectionId] || {
         title: "",
@@ -295,19 +414,46 @@ const Editor = () => {
     );
   };
 
+  const getSectionTitle = (sectionId) => {
+    const templateSection = template?.sections?.find((sec) => sec.id === sectionId);
+    return sections[sectionId]?.title || templateSection?.title || "";
+  };
+
   const handleImageChange = (sectionId, blockIndex, field, value) => {
     updateBlocks(sectionId, (blocks) =>
-      blocks.map((block, index) =>
-        index === blockIndex
-          ? {
-              ...block,
-              image: {
-                ...block.image,
-                [field]: value,
-              },
-            }
-          : block,
-      ),
+      blocks.map((block, index) => {
+        if (index !== blockIndex) return block;
+
+        const nextImage = {
+          ...block.image,
+          [field]: value,
+        };
+        let metadata = { ...(block.metadata || {}) };
+
+        if (field === "caption") {
+          metadata = {
+            ...metadata,
+            captionUserEdited: true,
+            captionAuto: false,
+          };
+        }
+
+        if (
+          field === "src" &&
+          value &&
+          !metadata.captionUserEdited &&
+          !`${nextImage.caption || ""}`.trim()
+        ) {
+          nextImage.caption = getDefaultFigureCaption(getSectionTitle(sectionId));
+          metadata = { ...metadata, captionAuto: true };
+        }
+
+        return {
+          ...block,
+          image: nextImage,
+          metadata,
+        };
+      }),
     );
   };
 
@@ -323,10 +469,43 @@ const Editor = () => {
       selectionStart,
       selectionEnd,
     });
+
+    setFocusedParagraph({
+      sectionId,
+      blockClientId,
+      caretTop: getCaretTop(textarea),
+    });
+  };
+
+  const clearParagraphFocusSoon = () => {
+    if (paragraphBlurTimeoutRef.current) {
+      clearTimeout(paragraphBlurTimeoutRef.current);
+    }
+
+    paragraphBlurTimeoutRef.current = setTimeout(() => {
+      setFocusedParagraph(null);
+      setOpenAddMenu((current) =>
+        current?.startsWith("cursor:") ? null : current,
+      );
+    }, 180);
+  };
+
+  const cancelParagraphBlur = () => {
+    if (paragraphBlurTimeoutRef.current) {
+      clearTimeout(paragraphBlurTimeoutRef.current);
+      paragraphBlurTimeoutRef.current = null;
+    }
+  };
+
+  const triggerImageFilePicker = (blockKey) => {
+    imageFileInputRefs.current[blockKey]?.click();
   };
 
   const insertBlockAfter = (sectionId, afterIndex, type) => {
-    const block = createBlockByType(type);
+    const block =
+      type === "image"
+        ? createImageBlock(getDefaultFigureCaption(getSectionTitle(sectionId)))
+        : createBlockByType(type);
 
     updateBlocks(sectionId, (blocks) => {
       const next = [...blocks];
@@ -346,7 +525,10 @@ const Editor = () => {
   const insertBlockAtCursor = (type, target = insertionTarget) => {
     if (!target) return;
 
-    const insertedBlock = createBlockByType(type);
+    const insertedBlock =
+      type === "image"
+        ? createImageBlock(getDefaultFigureCaption(getSectionTitle(target.sectionId)))
+        : createBlockByType(type);
 
     updateBlocks(target.sectionId, (blocks) => {
       const targetIndex = blocks.findIndex((block, index) => {
@@ -408,6 +590,7 @@ const Editor = () => {
   };
 
   const openCursorAddMenu = (sectionId, blockIndex, block) => {
+    cancelParagraphBlur();
     const blockClientId = block.clientId || block.id;
     const isCurrentTarget =
       insertionTarget?.sectionId === sectionId &&
@@ -544,7 +727,7 @@ const Editor = () => {
     });
   };
 
-  const handleImageFile = (sectionId, blockIndex, file) => {
+  const handleImageFile = async (sectionId, blockIndex, file) => {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
@@ -552,11 +735,12 @@ const Editor = () => {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      handleImageChange(sectionId, blockIndex, "src", reader.result || "");
-    };
-    reader.readAsDataURL(file);
+    try {
+      const dataUrl = await compressImageToDataUrl(file);
+      handleImageChange(sectionId, blockIndex, "src", dataUrl);
+    } catch {
+      toast.error("Could not process image.");
+    }
   };
 
   const saveAll = useCallback(async () => {
@@ -590,10 +774,18 @@ const Editor = () => {
       }
 
       toast.success("All changes saved!");
+      setIsDirty(false);
       setSaving(false);
-    } catch {
+    } catch (err) {
       setSaving(false);
-      toast.error("Save failed");
+      const message =
+        err.response?.data?.message ||
+        (err.response?.data?.code === "ER_NO_SUCH_TABLE"
+          ? "Database migration required: run 2026-05-22-add-document-section-blocks.sql"
+          : null) ||
+        err.message ||
+        "Save failed";
+      toast.error(message);
     }
   }, [documentId, documentTitle, getBlocksForSection, sections, template]);
 
@@ -667,20 +859,10 @@ const Editor = () => {
     }
   };
 
-  const generateNumbering = (sectionsList) => {
-    const counters = {};
-    return sectionsList.map((sec) => {
-      const level = sec.level || 1;
-      if (!counters[level]) counters[level] = 0;
-      counters[level]++;
-      for (let i = level + 1; i <= 10; i++) counters[i] = 0;
-      const number = Object.keys(counters)
-        .slice(0, level)
-        .map((lvl) => counters[lvl] || 0)
-        .join(".");
-      return { ...sec, number };
-    });
-  };
+  const figureLabels = useMemo(() => {
+    if (!template) return new Map();
+    return computeFigureLabels(template, sections).labels;
+  }, [template, sections]);
 
   const estimateSectionHeight = (sectionId) =>
     getBlocksForSection(sectionId).reduce((total, block) => {
@@ -768,59 +950,102 @@ const Editor = () => {
   const renderBlock = (sec, block, blockIndex, totalBlocks) => {
     const blockKey = block.clientId || block.id || `${sec.id}-${blockIndex}`;
     const cursorMenuKey = `cursor:${sec.id}:${block.clientId || block.id}`;
-    const isCursorActive =
-      insertionTarget?.sectionId === sec.id &&
-      insertionTarget?.blockClientId === (block.clientId || block.id);
+    const blockClientId = block.clientId || block.id;
+    const isParagraphFocused =
+      focusedParagraph?.sectionId === sec.id &&
+      focusedParagraph?.blockClientId === blockClientId;
+    const isCursorMenuOpen = openAddMenu === cursorMenuKey;
+    const showParagraphInsert = isParagraphFocused || isCursorMenuOpen;
+    const caretTop = isParagraphFocused ? focusedParagraph.caretTop : 4;
 
     if (block.type === "image") {
+      const figureKey = `${sec.id}:${block.clientId || block.id || blockIndex}`;
+      const figureLabel = figureLabels.get(figureKey) || "Figure";
+      const hasImage = Boolean(block.image?.src);
+
       return (
         <div key={blockKey} className="content-block image-content-block">
           <div className="block-type-icon"><FiImage /></div>
           <div className="image-block-body">
-            <div className="image-preview-shell">
-              {block.image?.src ? (
-                <img src={block.image.src} alt={block.image.alt || ""} />
+            <input
+              ref={(node) => {
+                if (node) imageFileInputRefs.current[blockKey] = node;
+                else delete imageFileInputRefs.current[blockKey];
+              }}
+              type="file"
+              accept="image/*"
+              className="image-file-input-hidden"
+              tabIndex={-1}
+              aria-hidden="true"
+              onChange={(event) => {
+                handleImageFile(sec.id, blockIndex, event.target.files?.[0]);
+                event.target.value = "";
+              }}
+            />
+            <div
+              className={`image-preview-shell ${hasImage ? "has-image" : "is-empty"}`}
+              role="button"
+              tabIndex={0}
+              onClick={() => triggerImageFilePicker(blockKey)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  triggerImageFilePicker(blockKey);
+                }
+              }}
+              title={hasImage ? "Click to replace image" : "Click to upload image"}
+            >
+              {hasImage ? (
+                <img src={block.image.src} alt={block.image.alt || figureLabel} />
               ) : (
-                <div className="image-empty-state"><FiImage /></div>
+                <div className="image-empty-state">
+                  <FiUpload />
+                  <span>Click to upload image</span>
+                </div>
               )}
+              {hasImage && <span className="image-preview-overlay">Click to replace</span>}
             </div>
-            <div className="image-fields">
+            <div className="figure-caption-row">
+              <span className="figure-number-label">{figureLabel}</span>
               <input
                 ref={(node) => {
                   if (node) imageUrlRefs.current[blockKey] = node;
                   else delete imageUrlRefs.current[blockKey];
                 }}
-                value={block.image?.src || ""}
-                onChange={(e) =>
-                  handleImageChange(sec.id, blockIndex, "src", e.target.value)
-                }
-                placeholder="Image URL"
-              />
-              <input
-                value={block.image?.alt || ""}
-                onChange={(e) =>
-                  handleImageChange(sec.id, blockIndex, "alt", e.target.value)
-                }
-                placeholder="Alt text"
-              />
-              <input
+                className="figure-caption-input"
                 value={block.image?.caption || ""}
                 onChange={(e) =>
                   handleImageChange(sec.id, blockIndex, "caption", e.target.value)
                 }
-                placeholder="Caption"
+                placeholder="Caption description (editable)"
               />
-              <label className="image-upload-button">
-                <FiUpload /> Upload
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) =>
-                    handleImageFile(sec.id, blockIndex, e.target.files?.[0])
-                  }
-                />
-              </label>
             </div>
+            <details className="image-advanced-fields">
+              <summary>Image options</summary>
+              <div className="image-fields">
+                <input
+                  value={block.image?.src || ""}
+                  onChange={(e) =>
+                    handleImageChange(sec.id, blockIndex, "src", e.target.value)
+                  }
+                  placeholder="Image URL"
+                />
+                <input
+                  value={block.image?.alt || ""}
+                  onChange={(e) =>
+                    handleImageChange(sec.id, blockIndex, "alt", e.target.value)
+                  }
+                  placeholder="Alt text"
+                />
+                <button
+                  type="button"
+                  className="image-upload-button"
+                  onClick={() => triggerImageFilePicker(blockKey)}
+                >
+                  <FiUpload /> {hasImage ? "Replace image" : "Upload image"}
+                </button>
+              </div>
+            </details>
           </div>
           {renderBlockActions(sec.id, blockIndex, totalBlocks)}
         </div>
@@ -830,61 +1055,80 @@ const Editor = () => {
     return (
       <div
         key={blockKey}
-        className={`content-block paragraph-content-block ${isCursorActive ? "is-active" : ""}`}
+        className={`content-block paragraph-content-block ${showParagraphInsert ? "is-focused" : ""}`}
       >
         <div className="block-gutter">
-          <button
-            type="button"
-            className="inline-insert-button"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => openCursorAddMenu(sec.id, blockIndex, block)}
-            title="Insert at cursor"
-          >
-            <FiPlus />
-          </button>
           <span className="block-type-icon"><FiType /></span>
-          {openAddMenu === cursorMenuKey && (
-            <div className="block-add-menu inline-add-menu">
-              <button type="button" onClick={() => insertBlockAtCursor("paragraph")}>
-                <FiType /> Text
+        </div>
+        <div className="paragraph-content-wrapper">
+          {showParagraphInsert && (
+            <div
+              className="paragraph-insert-rail"
+              style={{ top: `${caretTop}px` }}
+            >
+              <button
+                type="button"
+                className="inline-insert-button"
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  cancelParagraphBlur();
+                }}
+                onClick={() => openCursorAddMenu(sec.id, blockIndex, block)}
+                title="Insert at cursor"
+              >
+                <FiPlus />
               </button>
-              <button type="button" onClick={() => insertBlockAtCursor("image")}>
-                <FiImage /> Image
-              </button>
+              {isCursorMenuOpen && (
+                <div
+                  className="block-add-menu inline-add-menu"
+                  onMouseDown={(event) => event.preventDefault()}
+                >
+                  <button type="button" onClick={() => insertBlockAtCursor("paragraph")}>
+                    <FiType /> Text
+                  </button>
+                  <button type="button" onClick={() => insertBlockAtCursor("image")}>
+                    <FiImage /> Image
+                  </button>
+                </div>
+              )}
             </div>
           )}
+          <textarea
+            ref={(node) => {
+              if (node) textareaRefs.current[blockKey] = node;
+              else delete textareaRefs.current[blockKey];
+            }}
+            placeholder="Start typing..."
+            value={block.text || ""}
+            onChange={(e) => {
+              trackParagraphCaret(sec.id, blockIndex, block, e.currentTarget);
+              handleParagraphChange(sec.id, blockIndex, e.target.value);
+            }}
+            onClick={(e) => {
+              cancelParagraphBlur();
+              trackParagraphCaret(sec.id, blockIndex, block, e.currentTarget);
+            }}
+            onFocus={(e) => {
+              cancelParagraphBlur();
+              trackParagraphCaret(sec.id, blockIndex, block, e.currentTarget);
+            }}
+            onBlur={clearParagraphFocusSoon}
+            onKeyUp={(e) =>
+              trackParagraphCaret(sec.id, blockIndex, block, e.currentTarget)
+            }
+            onSelect={(e) =>
+              trackParagraphCaret(sec.id, blockIndex, block, e.currentTarget)
+            }
+            onKeyDown={(e) => handleParagraphKeyDown(e, sec.id, blockIndex, block)}
+            className="editor-block-textarea"
+            rows={1}
+            onInput={(e) => {
+              e.target.style.height = "auto";
+              e.target.style.height = `${e.target.scrollHeight}px`;
+              trackParagraphCaret(sec.id, blockIndex, block, e.currentTarget);
+            }}
+          />
         </div>
-        <textarea
-          ref={(node) => {
-            if (node) textareaRefs.current[blockKey] = node;
-            else delete textareaRefs.current[blockKey];
-          }}
-          placeholder="Start typing..."
-          value={block.text || ""}
-          onChange={(e) => {
-            trackParagraphCaret(sec.id, blockIndex, block, e.currentTarget);
-            handleParagraphChange(sec.id, blockIndex, e.target.value);
-          }}
-          onClick={(e) =>
-            trackParagraphCaret(sec.id, blockIndex, block, e.currentTarget)
-          }
-          onFocus={(e) =>
-            trackParagraphCaret(sec.id, blockIndex, block, e.currentTarget)
-          }
-          onKeyUp={(e) =>
-            trackParagraphCaret(sec.id, blockIndex, block, e.currentTarget)
-          }
-          onSelect={(e) =>
-            trackParagraphCaret(sec.id, blockIndex, block, e.currentTarget)
-          }
-          onKeyDown={(e) => handleParagraphKeyDown(e, sec.id, blockIndex, block)}
-          className="editor-block-textarea"
-          rows={1}
-          onInput={(e) => {
-            e.target.style.height = "auto";
-            e.target.style.height = `${e.target.scrollHeight}px`;
-          }}
-        />
         {renderBlockActions(sec.id, blockIndex, totalBlocks)}
       </div>
     );
@@ -900,11 +1144,43 @@ const Editor = () => {
     );
   }
 
-  const numberedSections = generateNumbering(template.sections);
+  const numberedSections = buildSectionNumbers(template.sections);
   const pages = paginateSections(numberedSections);
 
   return (
     <div className="editor-workspace">
+      {blocker.state === "blocked" && (
+        <div className="preview-overlay">
+          <div className="preview-modal unsaved-changes-modal">
+            <h3>Unsaved Changes</h3>
+            <p>You have unsaved changes. Do you want to save before leaving?</p>
+            <div className="unsaved-changes-actions">
+              <button 
+                className="btn-modal-cancel" 
+                onClick={() => blocker.reset()}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn-modal-danger" 
+                onClick={() => blocker.proceed()}
+              >
+                Don't Save
+              </button>
+              <button 
+                className="btn-modal-save" 
+                onClick={async () => {
+                  await saveAll();
+                  blocker.proceed();
+                }}
+              >
+                Save & Exit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {previewHTML && (
         <div className="preview-overlay">
           <div className="preview-modal">
@@ -919,8 +1195,8 @@ const Editor = () => {
         </div>
       )}
 
-      <div className="editor-toolbar">
-        <div className="toolbar-row toolbar-row-title">
+      <div className="editor-toolbar single-row-toolbar">
+        <div className="toolbar-left">
           <div className="doc-icon-circle"><FiFileText /></div>
           <div className="title-group">
             <span className="template-label">Template - {template.name}</span>
@@ -933,42 +1209,61 @@ const Editor = () => {
           </div>
         </div>
 
-        <div className="toolbar-row toolbar-row-actions">
+        <div className="toolbar-right">
           <button
             onClick={saveAll}
-            className={`btn-save ${saving ? "saving-pulse" : ""}`}
+            className={`btn-save-prominent ${saving ? "saving-pulse" : ""}`}
             disabled={saving}
           >
-            <FiSave /> {saving ? "Saving..." : "Save"}
+            <FiSave size={20} />
+            <div className="save-btn-text">
+              <span className="save-primary">Save Document</span>
+              <span className="save-secondary">{saving ? "Saving..." : "All changes up to date"}</span>
+            </div>
           </button>
-          <button onClick={handlePreview} className="btn-secondary"><FiEye /> Preview</button>
-          <div className="divider"></div>
-          <button
-            onClick={async () => {
-              const newStatus = status === "completed" ? "draft" : "completed";
-              if (newStatus === "completed") {
-                const isValid = await validate();
-                if (!isValid) return;
-              }
-              try {
-                await api.put(`/documents/${documentId}/status`, { status: newStatus });
-                setStatus(newStatus);
-                toast.success(`Document marked as ${newStatus}`);
-              } catch {
-                toast.error("Failed to update status");
-              }
-            }}
-            className="btn-secondary"
-            style={
-              status === "completed"
-                ? { background: "#10b981", color: "white", borderColor: "#10b981" }
-                : {}
-            }
-          >
-            {status === "completed" ? "Completed" : "Mark as Completed"}
-          </button>
-          <button onClick={handleExport} className="btn-export"><FiDownload /> PDF</button>
-          <button onClick={handleExportWord} className="btn-export"><BiSolidFileDoc /> Word</button>
+
+          <div className="toolbar-tools-container" onMouseMove={resetToolsTimer}>
+            <button 
+              className="btn-tools-toggle"
+              onClick={() => setShowToolsMenu(!showToolsMenu)}
+              title="More Actions"
+            >
+              <FiSettings size={22} />
+            </button>
+            
+            {showToolsMenu && (
+              <div className="tools-half-circle-menu">
+                <button onClick={handlePreview} className="tool-btn prominent-tool">
+                  <FiEye /> <span>Preview</span>
+                </button>
+                <button onClick={handleExport} className="tool-btn prominent-tool">
+                  <FiDownload /> <span>PDF</span>
+                </button>
+                <button onClick={handleExportWord} className="tool-btn prominent-tool">
+                  <BiSolidFileDoc /> <span>Word</span>
+                </button>
+                <button 
+                  onClick={async () => {
+                    const newStatus = status === "completed" ? "draft" : "completed";
+                    if (newStatus === "completed") {
+                      const isValid = await validate();
+                      if (!isValid) return;
+                    }
+                    try {
+                      await api.put(`/documents/${documentId}/status`, { status: newStatus });
+                      setStatus(newStatus);
+                      toast.success(`Document marked as ${newStatus}`);
+                    } catch {
+                      toast.error("Failed to update status");
+                    }
+                  }} 
+                  className={`tool-btn prominent-tool ${status === "completed" ? "status-completed" : ""}`}
+                >
+                  <FiCheckCircle /> <span>{status === "completed" ? "Completed" : "Complete"}</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

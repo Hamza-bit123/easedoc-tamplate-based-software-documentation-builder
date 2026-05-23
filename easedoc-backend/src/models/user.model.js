@@ -52,3 +52,30 @@ export const deletePendingUserVerification = (email, callback) => {
   const sql = "DELETE FROM pending_user_verifications WHERE email = ?";
   db.query(sql, [email], callback);
 };
+
+export const updateUser = (userId, updates, callback) => {
+  const { fullName, email, password } = updates;
+  const fields = [];
+  const values = [];
+
+  if (fullName !== undefined) {
+    fields.push("fullName = ?");
+    values.push(fullName);
+  }
+  if (email !== undefined) {
+    fields.push("email = ?");
+    values.push(email);
+  }
+  if (password !== undefined) {
+    fields.push("password = ?");
+    values.push(password);
+  }
+
+  if (fields.length === 0) {
+    return callback(null, { affectedRows: 0 });
+  }
+
+  values.push(userId);
+  const sql = `UPDATE users SET ${fields.join(", ")} WHERE id = ?`;
+  db.query(sql, values, callback);
+};

@@ -87,4 +87,22 @@
   }
 
   /* No header padding adjustment needed anymore */
+}
+
+.smart-header-wrapper {
+  max-height: 80px; /* generous cap above header's 72px height */
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s ease;
+  opacity: 1;
+  overflow: hidden;
+}
+
+.smart-header-wrapper.header-hidden {
+  max-height: 0;
+  opacity: 0;
+}
+
+.smart-header-wrapper .top-header {
+  position: relative !important;
+  top: 0 !important;
 }

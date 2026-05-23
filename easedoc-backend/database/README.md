@@ -36,10 +36,15 @@ For an existing database, run:
 
 ```sql
 SOURCE database/2026-05-22-add-document-section-blocks.sql;
+SOURCE database/2026-05-23-add-template-section-seed-blocks.sql;
 ```
 
 The migration preserves `document_sections.content` and copies any existing
 section text into a paragraph block when that section has no blocks yet.
+
+`2026-05-23-add-template-section-seed-blocks.sql` adds `seed_blocks` to
+`template_section_versions` and seeds optional figure placeholders on sections
+where the bundled standards commonly use diagrams.
 
 ## Install
 

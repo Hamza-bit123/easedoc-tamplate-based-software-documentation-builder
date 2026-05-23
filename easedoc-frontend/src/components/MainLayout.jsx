@@ -12,6 +12,7 @@ const MainLayout = () => {
   const location = useLocation();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
+  const [showHeader, setShowHeader] = useState(true);
 
   useEffect(() => {
     const handleResize = () => {
@@ -21,6 +22,48 @@ const MainLayout = () => {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  useEffect(() => {
+    const isEditor = location.pathname.includes("/editor");
+    if (!isEditor) {
+      setShowHeader(true);
+      return;
+    }
+
+    setShowHeader(true); // Always show on route change
+
+    // Retry finding the scroller since it mounts after layout
+    let scroller = null;
+    let lastScrollY = 0;
+
+    const handleScroll = () => {
+      const currentScrollY = scroller.scrollTop;
+      if (currentScrollY > lastScrollY && currentScrollY > 80) {
+        setShowHeader(false);
+      } else if (currentScrollY < lastScrollY) {
+        setShowHeader(true);
+      }
+      lastScrollY = currentScrollY;
+    };
+
+    const attach = () => {
+      scroller = document.querySelector(".main-container");
+      if (!scroller) return false;
+      lastScrollY = scroller.scrollTop;
+      scroller.addEventListener("scroll", handleScroll, { passive: true });
+      return true;
+    };
+
+    if (!attach()) {
+      // If not ready yet, try after next paint
+      const raf = requestAnimationFrame(() => attach());
+      return () => cancelAnimationFrame(raf);
+    }
+
+    return () => {
+      if (scroller) scroller.removeEventListener("scroll", handleScroll);
+    };
+  }, [location.pathname]);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
@@ -44,7 +87,12 @@ const MainLayout = () => {
             <FiMenu size={24} />
           </button>
         )}
-        {!isEditor && <Header user={user} toggleSidebar={toggleSidebar} />}
+        <div
+          className={`smart-header-wrapper${!showHeader ? ' header-hidden' : ''}`}
+          style={{ overflow: 'hidden' }}
+        >
+          <Header user={user} toggleSidebar={toggleSidebar} />
+        </div>
 
         <main className={`main-container ${isEditor ? 'editor-mode' : ''}`}>
           <Outlet />

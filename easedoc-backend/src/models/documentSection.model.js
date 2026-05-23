@@ -17,6 +17,12 @@ const getSectionParams = (data) => [
   data.custom_title,
 ];
 
+const truncate = (value, maxLength) => {
+  if (value === null || value === undefined || value === "") return null;
+  const text = `${value}`;
+  return text.length > maxLength ? text.slice(0, maxLength) : text;
+};
+
 const getBlockValues = (documentSectionId, blocks) =>
   blocks.map((block, index) => [
     documentSectionId,
@@ -24,11 +30,25 @@ const getBlockValues = (documentSectionId, blocks) =>
     index + 1,
     block.text || null,
     block.image?.src || null,
-    block.image?.alt || null,
+    truncate(block.image?.alt, 255),
     block.image?.caption || null,
     block.tableData || null,
     block.metadata || null,
   ]);
+
+const resolveDocumentSectionId = async (connection, data, upsertResult) => {
+  if (upsertResult.insertId) {
+    return upsertResult.insertId;
+  }
+
+  const [rows] = await connection.query(
+    `SELECT id FROM document_sections
+     WHERE document_id = ? AND template_section_version_id = ?`,
+    [data.document_id, data.template_section_version_id],
+  );
+
+  return rows[0]?.id;
+};
 
 export const upsertSection = (data, callback) => {
   const sql = `
@@ -87,7 +107,11 @@ export const saveSectionWithBlocks = async (data, blocks) => {
     await connection.beginTransaction();
 
     const [result] = await connection.query(sectionUpsertSql, getSectionParams(data));
-    const documentSectionId = result.insertId;
+    const documentSectionId = await resolveDocumentSectionId(connection, data, result);
+
+    if (!documentSectionId) {
+      throw new Error("Could not resolve document section id after save");
+    }
 
     await connection.query(
       "DELETE FROM document_section_blocks WHERE document_section_id = ?",

@@ -125,3 +125,23 @@
   color: var(--text-main);
   letter-spacing: -0.01em;
 }
+
+/* Header Profile Dropdown Styles */
+.header-profile-container {
+  position: relative;
+}
+
+.header-profile-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}

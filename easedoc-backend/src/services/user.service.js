@@ -8,6 +8,7 @@ import {
   findUserByEmail,
   incrementPendingVerificationAttempts,
   upsertPendingUserVerification,
+  updateUser,
 } from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import db from "../config/db.js";
@@ -306,3 +307,86 @@ export const deleteUserService = (userId) => {
     });
   });
 };
+
+const updateUserAsync = (userId, updates) =>
+  new Promise((resolve, reject) => {
+    updateUser(userId, updates, (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
+  });
+
+export const updateProfileService = async (userId, data, currentUserRole) => {
+  const updates = {};
+  
+  if (data.fullName) {
+    updates.fullName = data.fullName.trim();
+  }
+  
+  let newEmail = null;
+  if (data.email) {
+    newEmail = normalizeEmail(data.email);
+    await validateEmail(newEmail);
+    
+    // Check if email is already taken by ANOTHER user
+    const existingUsers = await findUserByEmailAsync(newEmail);
+    if (existingUsers.length > 0 && existingUsers[0].id !== userId) {
+      throw { message: "Email is already taken by another user" };
+    }
+    updates.email = newEmail;
+  }
+  
+  if (data.password) {
+    if (!data.oldPassword) {
+      throw { message: "Current password is required to set a new password" };
+    }
+
+    // Fetch user to verify old password
+    const currentUser = await new Promise((resolve, reject) => {
+      db.query("SELECT password FROM users WHERE id = ?", [userId], (err, results) => {
+        if (err) return reject(err);
+        if (results.length === 0) return reject({ message: "User not found" });
+        resolve(results[0]);
+      });
+    });
+
+    const isMatch = await bcrypt.compare(data.oldPassword, currentUser.password);
+    if (!isMatch) {
+      throw { message: "Incorrect current password" };
+    }
+
+    updates.password = await bcrypt.hash(data.password, 10);
+  }
+  
+  await updateUserAsync(userId, updates);
+  
+  // Re-fetch user to generate a new token
+  return new Promise((resolve, reject) => {
+    db.query("SELECT * FROM users WHERE id = ?", [userId], (err, results) => {
+      if (err) return reject(err);
+      if (results.length === 0) return reject({ message: "User not found" });
+      
+      const user = results[0];
+      const token = jwt.sign(
+        {
+          id: user.id,
+          role: user.role,
+          fullName: user.fullName,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRES || "1d" } // Added fallback for JWT_EXPIRES
+      );
+      
+      resolve({
+        token,
+        user: {
+          id: user.id,
+          fullName: user.fullName,
+          email: user.email,
+          role: user.role,
+        },
+      });
+    });
+  });
+};
+

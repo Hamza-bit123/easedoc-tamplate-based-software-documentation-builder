@@ -50,3 +50,9 @@ export const getDocumentsByUser = (userId, callback) => {
 
   db.query(sql, [userId], callback);
 };
+
+export const deleteDocumentByOwner = (documentId, userId) => {
+  return db
+    .promise()
+    .query("DELETE FROM documents WHERE id = ? AND user_id = ?", [documentId, userId]);
+};

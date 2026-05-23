@@ -1,3 +1,9 @@
+import {
+  buildSectionNumbers,
+  computeFigureLabels,
+  formatExportedFigureCaption,
+} from "./figureNumbering";
+
 const escapeHTML = (value) =>
   `${value ?? ""}`
     .replace(/&/g, "&amp;")
@@ -109,29 +115,8 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
   const paddingRight = template.page_margin_right * 3.78;
   const CONTENT_HEIGHT = PAGE_HEIGHT - 15;
 
-  const addNumbering = (sectionsList) => {
-    const counters = {};
-
-    return sectionsList.map((sec) => {
-      const level = sec.level || 1;
-
-      if (!counters[level]) counters[level] = 0;
-      counters[level]++;
-
-      for (let i = level + 1; i <= 10; i++) {
-        counters[i] = 0;
-      }
-
-      const number = Object.keys(counters)
-        .slice(0, level)
-        .map((lvl) => counters[lvl] || 0)
-        .join(".");
-
-      return { ...sec, number };
-    });
-  };
-
-  const numberedSections = addNumbering(template.sections);
+  const numberedSections = buildSectionNumbers(template.sections);
+  const figureLabels = computeFigureLabels(template, sections).labels;
   const measure = document.createElement("div");
   measure.style.position = "absolute";
   measure.style.visibility = "hidden";
@@ -195,43 +180,48 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
     `;
   };
 
-  const getImageHTML = (sec, block) => {
+  const getImageHTML = (sec, block, blockIndex) => {
     const indent = sec.padding_left + (sec.level - 1) * 20;
     const src = block.image?.src || "";
-    const caption = block.image?.caption || "";
+    const userCaption = block.image?.caption || "";
+    const figureKey = `${sec.id}:${block.clientId || block.id || blockIndex}`;
+    const figureLabel = figureLabels.get(figureKey) || "Figure";
+    const caption = formatExportedFigureCaption(figureLabel, userCaption);
 
-    if (!src && !caption) {
+    if (!src && !userCaption) {
       return "";
     }
 
     return `
-      <figure style="
+      <figure class="document-figure" style="
         padding-left:${indent}px;
-        margin: 12px 0 16px 0;
+        margin: 16px 0 20px 0;
         text-align:center;
-        min-height:${caption ? 220 : 190}px;
+        max-width:100%;
+        box-sizing:border-box;
       ">
         ${
           src
-            ? `<img src="${escapeHTML(src)}" alt="${escapeHTML(block.image?.alt || "")}" style="
+            ? `<img src="${escapeHTML(src)}" alt="${escapeHTML(block.image?.alt || figureLabel)}" style="
                 display:block;
+                width:100%;
                 max-width:100%;
                 max-height:280px;
+                height:auto;
                 object-fit:contain;
                 margin:0 auto;
               " />`
             : ""
         }
-        ${
-          caption
-            ? `<figcaption style="
-                font-size:${Math.max(10, sec.body_font_size - 1)}px;
-                color:#4b5563;
-                margin-top:6px;
-                font-style:italic;
-              ">${escapeHTML(caption)}</figcaption>`
-            : ""
-        }
+        <figcaption style="
+          font-size:${Math.max(10, sec.body_font_size - 1)}px;
+          color:#374151;
+          margin-top:8px;
+          line-height:1.45;
+          text-align:center;
+          font-style:italic;
+          word-break:break-word;
+        ">${escapeHTML(caption)}</figcaption>
       </figure>
     `;
   };
@@ -366,10 +356,10 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
       }
     };
 
-    blocks.forEach((block) => {
+    blocks.forEach((block, blockIndex) => {
       if (block.type === "image") {
         flushList();
-        const imageHTML = getImageHTML(sec, block);
+        const imageHTML = getImageHTML(sec, block, blockIndex);
 
         if (!imageHTML) return;
 
@@ -405,6 +395,16 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
       margin: 0;
     }
 
+    .document-figure {
+      max-width: 100%;
+      overflow: hidden;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .document-figure img {
+      max-width: 100%;
+      height: auto;
+    }
     ${styles}
     @media print {
       body { background: white; }

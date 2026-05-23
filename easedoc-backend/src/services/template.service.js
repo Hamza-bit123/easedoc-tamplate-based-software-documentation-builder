@@ -110,7 +110,16 @@ export const getTemplateWithSectionsService = async (templateId) => {
     throw new Error("Template not found");
   }
 
-  const template = templateResult[0];
+  const [enrichedTemplateRows] = await db.promise().query(
+    `SELECT t.*, s.name AS standard_name, dt.name AS document_type_name
+     FROM templates t
+     LEFT JOIN standards s ON t.standard_id = s.id
+     LEFT JOIN document_types dt ON t.document_type_id = dt.id
+     WHERE t.id = ?`,
+    [templateId],
+  );
+
+  const template = enrichedTemplateRows[0] || templateResult[0];
 
   const activeVersion = await getTemplateVersionForUse(templateId);
 
@@ -135,7 +144,16 @@ export const getTemplateSpecificVersionService = async (templateId, versionId) =
     throw new Error("Template not found");
   }
 
-  const template = templateResult[0];
+  const [enrichedTemplateRows] = await db.promise().query(
+    `SELECT t.*, s.name AS standard_name, dt.name AS document_type_name
+     FROM templates t
+     LEFT JOIN standards s ON t.standard_id = s.id
+     LEFT JOIN document_types dt ON t.document_type_id = dt.id
+     WHERE t.id = ?`,
+    [templateId],
+  );
+
+  const template = enrichedTemplateRows[0] || templateResult[0];
 
   const versionData = await new Promise((resolve, reject) => {
     db.query("SELECT * FROM template_versions WHERE id = ?", [versionId], (err, res) => {

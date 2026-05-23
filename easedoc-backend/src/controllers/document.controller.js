@@ -5,6 +5,7 @@ import {
   getUserDocumentsService,
   updateDocumentStatusService,
   updateDocumentTitleService,
+  deleteDocumentService,
 } from "../services/document.service.js";
 
 export const createDocumentController = async (req, res) => {
@@ -75,6 +76,17 @@ export const updateDocumentTitleController = async (req, res) => {
   } catch (err) {
     res.status(err.statusCode || 500).json({
       message: err.message || "Error updating title",
+    });
+  }
+};
+
+export const deleteDocumentController = async (req, res) => {
+  try {
+    const result = await deleteDocumentService(req.params.id, req.user.id);
+    res.json(result);
+  } catch (err) {
+    res.status(err.statusCode || 500).json({
+      message: err.message || "Error deleting document",
     });
   }
 };

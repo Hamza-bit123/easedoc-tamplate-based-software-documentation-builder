@@ -20,7 +20,6 @@ const requiredEnvVars = [
   "DB_PORT",
   "DB_NAME",
   "DB_USER",
-  "DB_PASSWORD",
   "JWT_SECRET",
   "FRONTEND_URL",
 ];
@@ -39,7 +38,8 @@ app.use(
     credentials: true,
   }),
 );
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });

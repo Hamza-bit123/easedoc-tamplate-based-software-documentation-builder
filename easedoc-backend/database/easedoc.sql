@@ -148,6 +148,7 @@ CREATE TABLE `template_section_versions` (
   `margin_bottom` float NOT NULL DEFAULT 10,
   `padding_left` float NOT NULL DEFAULT 0,
   `section_order` int(11) NOT NULL,
+  `seed_blocks` json DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_template_section_versions_order` (`template_version_id`, `section_order`),
   KEY `idx_template_section_versions_template_version_id` (`template_version_id`),
@@ -265,38 +266,38 @@ VALUES
   (5, 5, 1, 1, 'Times New Roman', 1.5, 20, 20, 20, 20);
 
 INSERT INTO `template_section_versions`
-  (`id`, `template_version_id`, `title`, `level`, `is_required`, `title_font_size`, `title_font_weight`, `title_text_align`, `body_font_size`, `body_font_weight`, `body_text_align`, `line_height`, `list_type`, `margin_top`, `margin_bottom`, `padding_left`, `section_order`)
+  (`id`, `template_version_id`, `title`, `level`, `is_required`, `title_font_size`, `title_font_weight`, `title_text_align`, `body_font_size`, `body_font_weight`, `body_text_align`, `line_height`, `list_type`, `margin_top`, `margin_bottom`, `padding_left`, `section_order`, `seed_blocks`)
 VALUES
-  (1, 1, 'Introduction', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 1),
-  (2, 1, 'Overall Description', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 2),
-  (3, 1, 'Specific Requirements', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 3),
-  (4, 1, 'External Interface Requirements', 1, 0, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 4),
-  (5, 1, 'Non-functional Requirements', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 5),
+  (1, 1, 'Introduction', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 1, NULL),
+  (2, 1, 'Overall Description', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 2, NULL),
+  (3, 1, 'Specific Requirements', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 3, NULL),
+  (4, 1, 'External Interface Requirements', 1, 0, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 4, '[{"type":"paragraph"},{"type":"image","optional":true,"caption":"External interface diagram"}]'),
+  (5, 1, 'Non-functional Requirements', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 5, NULL),
 
-  (6, 2, 'Purpose and Scope', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 1),
-  (7, 2, 'Stakeholders and System Context', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 2),
-  (8, 2, 'System Requirements', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 3),
-  (9, 2, 'Verification and Validation Criteria', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 4),
+  (6, 2, 'Purpose and Scope', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 1, NULL),
+  (7, 2, 'Stakeholders and System Context', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 2, '[{"type":"paragraph"},{"type":"image","optional":true,"caption":"System context diagram"}]'),
+  (8, 2, 'System Requirements', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 3, NULL),
+  (9, 2, 'Verification and Validation Criteria', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 4, NULL),
 
-  (10, 3, 'Introduction', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 1),
-  (11, 3, 'System Architecture', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 2),
-  (12, 3, 'Data Design', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 3),
-  (13, 3, 'Interface Design', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 4),
-  (14, 3, 'Deployment Design', 1, 0, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 5),
+  (10, 3, 'Introduction', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 1, NULL),
+  (11, 3, 'System Architecture', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 2, '[{"type":"paragraph"},{"type":"image","optional":true,"caption":"System architecture diagram"}]'),
+  (12, 3, 'Data Design', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 3, NULL),
+  (13, 3, 'Interface Design', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 4, '[{"type":"paragraph"},{"type":"image","optional":true,"caption":"Interface diagram"}]'),
+  (14, 3, 'Deployment Design', 1, 0, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 5, NULL),
 
-  (15, 4, 'Introduction', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 1),
-  (16, 4, 'Design Overview', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 2),
-  (17, 4, 'Architectural Design', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 3),
-  (18, 4, 'Component Design', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 4),
-  (19, 4, 'Data Design', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 5),
-  (20, 4, 'Interface Design', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 6),
-  (21, 4, 'Requirements Traceability', 1, 0, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 7),
+  (15, 4, 'Introduction', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 1, NULL),
+  (16, 4, 'Design Overview', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 2, NULL),
+  (17, 4, 'Architectural Design', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 3, '[{"type":"paragraph"},{"type":"image","optional":true,"caption":"Architectural design diagram"}]'),
+  (18, 4, 'Component Design', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 4, NULL),
+  (19, 4, 'Data Design', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 5, NULL),
+  (20, 4, 'Interface Design', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 6, '[{"type":"paragraph"},{"type":"image","optional":true,"caption":"Interface diagram"}]'),
+  (21, 4, 'Requirements Traceability', 1, 0, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 7, NULL),
 
-  (22, 5, 'Architecture Purpose', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 1),
-  (23, 5, 'Stakeholders and Concerns', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 2),
-  (24, 5, 'Architecture Viewpoints', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 3),
-  (25, 5, 'Architecture Views', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 4),
-  (26, 5, 'Architecture Decisions', 1, 0, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 5);
+  (22, 5, 'Architecture Purpose', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 1, NULL),
+  (23, 5, 'Stakeholders and Concerns', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 2, NULL),
+  (24, 5, 'Architecture Viewpoints', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 3, NULL),
+  (25, 5, 'Architecture Views', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 4, '[{"type":"paragraph"},{"type":"image","optional":true,"caption":"Architecture view"}]'),
+  (26, 5, 'Architecture Decisions', 1, 0, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 5, NULL);
 
 ALTER TABLE `users` AUTO_INCREMENT = 2;
 ALTER TABLE `document_types` AUTO_INCREMENT = 4;

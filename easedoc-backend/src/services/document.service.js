@@ -6,6 +6,7 @@ import {
   getTemplateDocumentName,
   getDocumentsByUser,
   updateDocumentTitle,
+  deleteDocumentByOwner,
 } from "../models/document.model.js";
 import db from "../config/db.js";
 
@@ -331,4 +332,16 @@ export const updateDocumentTitleService = async (documentId, userId, title) => {
   }
 
   return { title: cleanTitle };
+};
+
+export const deleteDocumentService = async (documentId, userId) => {
+  const [result] = await deleteDocumentByOwner(documentId, userId);
+
+  if (result.affectedRows === 0) {
+    const error = new Error("Document not found or you are not the owner");
+    error.statusCode = 403;
+    throw error;
+  }
+
+  return { message: "Document deleted successfully" };
 };

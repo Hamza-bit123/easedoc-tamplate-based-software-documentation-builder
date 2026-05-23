@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiFileText, FiCalendar, FiArrowRight, FiPlus, FiPenTool } from "react-icons/fi";
+import { FiFileText, FiCalendar, FiArrowRight, FiPlus, FiPenTool, FiTrash2 } from "react-icons/fi";
 import api from "../api/axios";
 import "./MyDocuments.css";
 import toast from "react-hot-toast";
@@ -46,6 +46,60 @@ const MyDocuments = () => {
     if (diffInDays < 7) return `${diffInDays} days ago`;
 
     return past.toLocaleDateString(); // Fallback to date for older docs
+  };
+
+  const deleteDocument = (doc, event) => {
+    event.stopPropagation();
+    showPopup({
+      type: "warning",
+      title: "Delete Document",
+      message: "Are you sure you want to delete this document? This action cannot be undone.",
+      confirmText: "Delete",
+      onConfirm: () => {
+        setDocs((currentDocs) => currentDocs.filter((d) => d.id !== doc.id));
+        
+        let isUndone = false;
+
+        const toastId = toast.custom((t) => (
+          <div className={`undo-toast ${t.visible ? 'animate-enter' : 'animate-leave'}`}>
+            <div className="undo-toast-content">
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>
+                Deleting "{doc.title}"...
+              </span>
+              <button 
+                className="undo-btn" 
+                onClick={() => {
+                  isUndone = true;
+                  toast.dismiss(t.id);
+                  setDocs((currentDocs) => {
+                    const newDocs = [...currentDocs, doc];
+                    return newDocs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                  });
+                }}
+              >
+                Undo
+              </button>
+            </div>
+            <div className="undo-progress-bar"></div>
+          </div>
+        ), { duration: 5000 });
+
+        setTimeout(async () => {
+          if (!isUndone) {
+            toast.dismiss(toastId);
+            try {
+              await api.delete(`/documents/${doc.id}`);
+            } catch (err) {
+              toast.error(err.response?.data?.message || "Failed to delete document.");
+              setDocs((currentDocs) => {
+                const newDocs = [...currentDocs, doc];
+                return newDocs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+              });
+            }
+          }
+        }, 5000);
+      },
+    });
   };
 
   const renameDocument = (doc, event) => {
@@ -124,13 +178,22 @@ const MyDocuments = () => {
               <div className="doc-content">
                 <div className="doc-title-row">
                   <h3 title={doc.title}>{doc.title}</h3>
-                  <button
-                    className="rename-doc-btn"
-                    title="Rename document"
-                    onClick={(event) => renameDocument(doc, event)}
-                  >
-                    <FiPenTool size={13} />
-                  </button>
+                  <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                    <button
+                      className="rename-doc-btn"
+                      title="Rename document"
+                      onClick={(event) => renameDocument(doc, event)}
+                    >
+                      <FiPenTool size={13} />
+                    </button>
+                    <button
+                      className="delete-doc-btn"
+                      title="Delete document"
+                      onClick={(event) => deleteDocument(doc, event)}
+                    >
+                      <FiTrash2 size={13} />
+                    </button>
+                  </div>
                 </div>
                 <span className="template-badge">{doc.template_name}</span>
 

@@ -3,13 +3,7 @@ dotenv.config({ path: "./.env" });
 
 import mysql from "mysql2";
 
-const requiredDbEnvVars = [
-  "DB_HOST",
-  "DB_PORT",
-  "DB_NAME",
-  "DB_USER",
-  "DB_PASSWORD",
-];
+const requiredDbEnvVars = ["DB_HOST", "DB_PORT", "DB_NAME", "DB_USER"];
 
 const missingDbEnvVars = requiredDbEnvVars.filter((key) => !process.env[key]);
 if (missingDbEnvVars.length > 0) {

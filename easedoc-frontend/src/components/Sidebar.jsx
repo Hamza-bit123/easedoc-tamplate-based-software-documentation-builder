@@ -1,5 +1,5 @@
-import React, { useContext, useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import React, { useContext, useState, useRef, useEffect } from "react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import {
   MdOutlineDashboard,
   MdOutlineLayers,
@@ -24,6 +24,20 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     setIsDark(newTheme);
     document.body.setAttribute("data-theme", newTheme ? "dark" : "light");
   };
+
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileRef = useRef(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleNavClick = () => {
     if (window.innerWidth <= 768 && isOpen && toggleSidebar) {
@@ -119,10 +133,39 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </span>
           <span>{isDark ? "Light Mode" : "Dark Mode"}</span>
         </button>
-        <button className="nav-item logout-btn" onClick={() => logout()}>
-          <span className="icon"><FiLogOut size={22} /></span>
-          <span>Log Out</span>
-        </button>
+
+        <div className="sidebar-profile-container" ref={profileRef}>
+          <button 
+            className="nav-item profile-trigger" 
+            onClick={() => setIsProfileOpen(!isProfileOpen)}
+          >
+            <div className="sidebar-avatar">
+              {user?.fullName?.charAt(0).toUpperCase() || "U"}
+            </div>
+            <span>Profile</span>
+          </button>
+
+          {isProfileOpen && (
+            <div className="sidebar-profile-dropdown animate-fade-in">
+              <Link 
+                to="/profile" 
+                className="dropdown-item"
+                onClick={() => setIsProfileOpen(false)}
+              >
+                <FiSettings size={18} /> Edit Profile
+              </Link>
+              <button 
+                className="dropdown-item logout-text" 
+                onClick={() => {
+                  setIsProfileOpen(false);
+                  logout();
+                }}
+              >
+                <FiLogOut size={18} /> Log Out
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </aside>
   );

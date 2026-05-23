@@ -1,5 +1,5 @@
-import { useContext } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useContext, useMemo } from "react";
+import { createBrowserRouter, RouterProvider, createRoutesFromElements, Route, Navigate } from "react-router-dom";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -17,17 +17,18 @@ import CreateTemplate from "./pages/CreateTemplate";
 import UserManagement from "./pages/UserManagement";
 import TemplateDetails from "./pages/TemplateDetails";
 import UserTemplates from "./pages/UserTemplates";
+import Profile from "./pages/Profile";
 import { Toaster } from "react-hot-toast";
 
 function App() {
   const { user } = useContext(AuthContext);
-  return (
-    <BrowserRouter>
-      <Toaster position="top-right" reverseOrder={false} />
-      <Routes>
+
+  const router = useMemo(() => createBrowserRouter(
+    createRoutesFromElements(
+      <Route path="/">
         {/* PUBLIC ROUTES */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="login" element={<Login />} />
+        <Route path="register" element={<Register />} />
 
         {/* PROTECTED LAYOUT WRAPPER */}
         <Route
@@ -39,7 +40,7 @@ function App() {
         >
           {/* ROOT REDIRECT */}
           <Route
-            path="/"
+            index
             element={
               user?.role === "admin" ? (
                 <Navigate to="/admin" />
@@ -50,7 +51,7 @@ function App() {
           />
 
           {/* ADMIN SUB-ROUTES */}
-          <Route path="/admin">
+          <Route path="admin">
             <Route index element={<AdminDashboard />} />
             <Route path="templates">
               <Route index element={<AdminTemplates />} />
@@ -62,7 +63,7 @@ function App() {
           </Route>
 
           {/* USER SUB-ROUTES */}
-          <Route path="/user">
+          <Route path="user">
             <Route index element={<UserDashboard />} />
             <Route path="documents">
               <Route index element={<MyDocuments />} />
@@ -72,12 +73,21 @@ function App() {
           </Route>
 
           {/* SHARED PROTECTED ROUTES */}
-          <Route path="/standards/:typeId" element={<Standards />} />
-          <Route path="/editor/:documentId" element={<Editor />} />
-          <Route path="/settings" element={<div>Settings Page</div>} />
+          <Route path="standards/:typeId" element={<Standards />} />
+          <Route path="editor/:documentId" element={<Editor />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="settings" element={<div>Settings Page</div>} />
         </Route>
-      </Routes>
-    </BrowserRouter>
+      </Route>
+    )
+  ), [user?.role]);
+
+  return (
+    <>
+      <Toaster position="top-right" reverseOrder={false} />
+      <RouterProvider router={router} />
+    </>
   );
 }
+
 export default App;
