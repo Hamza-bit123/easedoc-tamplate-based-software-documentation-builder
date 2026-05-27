@@ -1,7 +1,9 @@
 import {
   buildSectionNumbers,
   computeFigureLabels,
+  computeTableLabels,
   formatExportedFigureCaption,
+  formatExportedTableCaption,
 } from "./figureNumbering";
 
 const escapeHTML = (value) =>
@@ -11,6 +13,51 @@ const escapeHTML = (value) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+
+const parseJsonPayload = (value) => {
+  if (!value || typeof value !== "string") return value || null;
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+};
+
+const getTableColumnCount = (rows = []) =>
+  rows.reduce((max, row) => Math.max(max, Array.isArray(row) ? row.length : 0), 0);
+
+const normalizeTableData = (value) => {
+  const parsed = parseJsonPayload(value) || {};
+  const source = Array.isArray(parsed) ? { rows: parsed } : parsed;
+  const sourceRows = Array.isArray(source.rows)
+    ? source.rows
+    : Array.isArray(source.cells)
+      ? source.cells
+      : [];
+  const headers = Array.isArray(source.headers)
+    ? source.headers
+    : Array.isArray(source.columns)
+      ? source.columns
+      : [];
+  const columnCount = Math.max(getTableColumnCount(sourceRows), headers.length, 1);
+  const rowCount = Math.max(sourceRows.length, headers.length ? 1 : 0);
+
+  return {
+    caption: `${source.caption || ""}`,
+    hasHeader: source.hasHeader !== false,
+    rows: Array.from({ length: rowCount }, (_, rowIndex) => {
+      const row = Array.isArray(sourceRows[rowIndex]) ? sourceRows[rowIndex] : [];
+
+      return Array.from({ length: columnCount }, (_, columnIndex) => {
+        const cell = row[columnIndex];
+        if (cell !== undefined && cell !== null) return `${cell}`;
+        if (rowIndex === 0 && headers[columnIndex]) return `${headers[columnIndex]}`;
+        return "";
+      });
+    }),
+  };
+};
 
 const getSectionBlocks = (contentObj = {}) => {
   if (Array.isArray(contentObj.blocks) && contentObj.blocks.length > 0) {
@@ -117,6 +164,7 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
 
   const numberedSections = buildSectionNumbers(template.sections);
   const figureLabels = computeFigureLabels(template, sections).labels;
+  const tableLabels = computeTableLabels(template, sections).labels;
   const measure = document.createElement("div");
   measure.style.position = "absolute";
   measure.style.visibility = "hidden";
@@ -222,6 +270,81 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
           font-style:italic;
           word-break:break-word;
         ">${escapeHTML(caption)}</figcaption>
+      </figure>
+    `;
+  };
+
+  const getTableHTML = (sec, block, blockIndex) => {
+    const indent = sec.padding_left + (sec.level - 1) * 20;
+    const table = normalizeTableData(block.tableData);
+    const rows = table.rows;
+    const tableKey = `${sec.id}:${block.clientId || block.id || blockIndex}`;
+    const tableLabel = tableLabels.get(tableKey) || "Table";
+    const caption = formatExportedTableCaption(tableLabel, table.caption || "");
+
+    if (!rows.length) {
+      return caption
+        ? `<p style="
+            font-size:${Math.max(10, sec.body_font_size - 1)}px;
+            padding-left:${indent}px;
+            margin: 12px 0 8px 0;
+            font-weight:700;
+          ">${escapeHTML(caption)}</p>`
+        : "";
+    }
+
+    const tableRows = rows
+      .map((row, rowIndex) => {
+        const isHeader = table.hasHeader && rowIndex === 0;
+        const tag = isHeader ? "th" : "td";
+
+        return `
+          <tr>
+            ${row
+              .map(
+                (cell) => `
+                  <${tag} style="
+                    border:1px solid #9ca3af;
+                    padding:6px 8px;
+                    font-size:${sec.body_font_size}px;
+                    line-height:${sec.line_height};
+                    text-align:left;
+                    vertical-align:top;
+                    background:${isHeader ? "#eef2ff" : "#ffffff"};
+                    font-weight:${isHeader ? "700" : sec.body_font_weight};
+                    word-break:break-word;
+                  ">${escapeHTML(cell)}</${tag}>
+                `,
+              )
+              .join("")}
+          </tr>
+        `;
+      })
+      .join("");
+
+    return `
+      <figure class="document-table" style="
+        padding-left:${indent}px;
+        margin: 14px 0 18px 0;
+        max-width:100%;
+        box-sizing:border-box;
+      ">
+        <figcaption style="
+          font-size:${Math.max(10, sec.body_font_size - 1)}px;
+          color:#111827;
+          margin-bottom:6px;
+          line-height:1.45;
+          text-align:left;
+          font-weight:700;
+          word-break:break-word;
+        ">${escapeHTML(caption)}</figcaption>
+        <table style="
+          width:100%;
+          border-collapse:collapse;
+          table-layout:fixed;
+        ">
+          <tbody>${tableRows}</tbody>
+        </table>
       </figure>
     `;
   };
@@ -373,6 +496,15 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
 
       if (block.type === "table") {
         flushList();
+        const tableHTML = getTableHTML(sec, block, blockIndex);
+
+        if (!tableHTML) return;
+
+        if (getHeight(currentHTML + tableHTML) > CONTENT_HEIGHT) {
+          pushPage();
+        }
+
+        currentHTML += tableHTML;
         return;
       }
 
@@ -404,6 +536,15 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
     .document-figure img {
       max-width: 100%;
       height: auto;
+    }
+    .document-table {
+      max-width: 100%;
+      overflow: hidden;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .document-table table {
+      max-width: 100%;
     }
     ${styles}
     @media print {

@@ -73,8 +73,12 @@ const getSectionBlocks = (contentObj = {}) => {
 const blockRegistryKey = (sectionId, block, blockIndex) =>
   `${sectionId}:${block.clientId || block.id || blockIndex}`;
 
-export const computeFigureLabels = (template, sectionsState = {}) => {
-  const rule = getFigureNumberingRule(template);
+const withPrefix = (rule, prefix) => ({
+  ...rule,
+  prefix,
+});
+
+const computeBlockLabels = (template, sectionsState, blockType, rule) => {
   const numberedSections = buildSectionNumbers(template.sections || []);
   const labels = new Map();
   let documentCounter = 0;
@@ -84,7 +88,7 @@ export const computeFigureLabels = (template, sectionsState = {}) => {
     const blocks = getSectionBlocks(sectionsState[sec.id] || {});
 
     blocks.forEach((block, blockIndex) => {
-      if ((block.type || block.block_type) !== "image") return;
+      if ((block.type || block.block_type) !== blockType) return;
 
       const key = blockRegistryKey(sec.id, block, blockIndex);
       let label;
@@ -95,10 +99,10 @@ export const computeFigureLabels = (template, sectionsState = {}) => {
       } else {
         const sectionNumber = sec.number;
         sectionCounters[sectionNumber] = (sectionCounters[sectionNumber] || 0) + 1;
-        const figureIndex = sectionCounters[sectionNumber];
+        const itemIndex = sectionCounters[sectionNumber];
         label = rule.includeSectionNumber
-          ? `${rule.prefix} ${sectionNumber}${rule.separator}${figureIndex}`
-          : `${rule.prefix} ${figureIndex}`;
+          ? `${rule.prefix} ${sectionNumber}${rule.separator}${itemIndex}`
+          : `${rule.prefix} ${itemIndex}`;
       }
 
       labels.set(key, label);
@@ -108,9 +112,21 @@ export const computeFigureLabels = (template, sectionsState = {}) => {
   return { labels, rule };
 };
 
+export const computeFigureLabels = (template, sectionsState = {}) => {
+  const rule = getFigureNumberingRule(template);
+  return computeBlockLabels(template, sectionsState, "image", rule);
+};
+
+export const computeTableLabels = (template, sectionsState = {}) => {
+  const rule = withPrefix(getFigureNumberingRule(template), "Table");
+  return computeBlockLabels(template, sectionsState, "table", rule);
+};
+
 export const formatExportedFigureCaption = (label, userCaption = "") => {
   const text = `${userCaption || ""}`.trim();
   if (!text) return label;
   if (text.toLowerCase().startsWith(label.toLowerCase())) return text;
   return `${label}: ${text}`;
 };
+
+export const formatExportedTableCaption = formatExportedFigureCaption;

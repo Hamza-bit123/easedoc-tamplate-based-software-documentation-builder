@@ -27,8 +27,8 @@ Those template formatting/page settings belong to `template_versions`, because e
 - `document_section_blocks`
 
 `document_section_blocks` stores the ordered body content for each saved
-section. Paragraphs, images, and future table blocks are separate rows so image
-content is never embedded inside paragraph text.
+section. Paragraphs, images, and table blocks are separate rows so rich content
+is never embedded inside paragraph text.
 
 ## Migrations
 
@@ -37,6 +37,7 @@ For an existing database, run:
 ```sql
 SOURCE database/2026-05-22-add-document-section-blocks.sql;
 SOURCE database/2026-05-23-add-template-section-seed-blocks.sql;
+SOURCE database/2026-05-26-add-template-section-table-seeds.sql;
 ```
 
 The migration preserves `document_sections.content` and copies any existing
@@ -45,6 +46,10 @@ section text into a paragraph block when that section has no blocks yet.
 `2026-05-23-add-template-section-seed-blocks.sql` adds `seed_blocks` to
 `template_section_versions` and seeds optional figure placeholders on sections
 where the bundled standards commonly use diagrams.
+
+`2026-05-26-add-template-section-table-seeds.sql` adds optional table
+placeholders to standard sections that commonly use summary, verification,
+traceability, stakeholder, or viewpoint matrices.
 
 ## Install
 

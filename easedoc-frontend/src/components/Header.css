@@ -38,7 +38,8 @@
   padding: var(--space-2);
   border-radius: var(--radius-md);
   transition: all 0.2s;
-  margin-left: calc(-1 * var(--space-2)); /* Align with padding */
+  margin-left: calc(-1 * var(--space-2));
+  /* Align with padding */
 }
 
 .header-sidebar-toggle:hover {
@@ -65,6 +66,7 @@
 .desktop-icon {
   display: block;
 }
+
 .mobile-icon {
   display: none;
 }
@@ -73,6 +75,7 @@
   .desktop-icon {
     display: none;
   }
+
   .mobile-icon {
     display: block;
   }
@@ -83,6 +86,7 @@
     display: none;
   }
 }
+
 /* Removed Theme Toggle Capsule styles */
 
 /* Profile Section */

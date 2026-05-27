@@ -6,7 +6,9 @@ import generatePrintHTML from "../utils/generatePrintHTML";
 import {
   buildSectionNumbers,
   computeFigureLabels,
+  computeTableLabels,
   getDefaultFigureCaption,
+  getDefaultTableCaption,
   parseSeedBlocks,
 } from "../utils/figureNumbering";
 import {
@@ -16,7 +18,9 @@ import {
   FiDownload,
   FiEye,
   FiFileText,
+  FiGrid,
   FiImage,
+  FiMinus,
   FiPlus,
   FiSave,
   FiTrash2,
@@ -31,6 +35,125 @@ import toast from "react-hot-toast";
 
 const newBlockId = () =>
   `block-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+const DEFAULT_TABLE_ROWS = 3;
+const DEFAULT_TABLE_COLUMNS = 3;
+const MIN_TABLE_ROWS = 1;
+const MIN_TABLE_COLUMNS = 1;
+const MAX_TABLE_ROWS = 24;
+const MAX_TABLE_COLUMNS = 8;
+
+const parseJsonPayload = (value) => {
+  if (!value || typeof value !== "string") return value || null;
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+};
+
+const getTableColumnCount = (rows = []) =>
+  rows.reduce((max, row) => Math.max(max, Array.isArray(row) ? row.length : 0), 0);
+
+const createTableData = ({
+  caption = "",
+  columns = DEFAULT_TABLE_COLUMNS,
+  headers,
+  rowCount,
+  rows,
+} = {}) => {
+  const headerLabels = Array.isArray(headers)
+    ? headers
+    : Array.isArray(columns)
+      ? columns
+      : [];
+  const requestedColumns = Array.isArray(columns)
+    ? columns.length
+    : Number(columns);
+  const columnCount = clamp(
+    Number.isFinite(requestedColumns) && requestedColumns > 0
+      ? requestedColumns
+      : headerLabels.length || DEFAULT_TABLE_COLUMNS,
+    MIN_TABLE_COLUMNS,
+    MAX_TABLE_COLUMNS,
+  );
+  const requestedRows = Number(rowCount ?? rows);
+  const totalRows = clamp(
+    Number.isFinite(requestedRows) && requestedRows > 0
+      ? requestedRows
+      : DEFAULT_TABLE_ROWS,
+    MIN_TABLE_ROWS,
+    MAX_TABLE_ROWS,
+  );
+
+  return {
+    caption,
+    hasHeader: true,
+    rows: Array.from({ length: totalRows }, (_, rowIndex) =>
+      Array.from({ length: columnCount }, (_, columnIndex) =>
+        rowIndex === 0 ? headerLabels[columnIndex] || `Column ${columnIndex + 1}` : "",
+      ),
+    ),
+  };
+};
+
+const normalizeTableData = (value, fallback = {}) => {
+  const parsed = parseJsonPayload(value) || {};
+  const source = Array.isArray(parsed) ? { rows: parsed } : parsed;
+  const sourceRows = Array.isArray(source.rows)
+    ? source.rows
+    : Array.isArray(source.cells)
+      ? source.cells
+      : [];
+  const headerLabels = Array.isArray(source.headers)
+    ? source.headers
+    : Array.isArray(source.columns)
+      ? source.columns
+      : Array.isArray(fallback.headers)
+        ? fallback.headers
+        : Array.isArray(fallback.columns)
+          ? fallback.columns
+          : [];
+  const requestedColumns = Number(source.columnCount ?? fallback.columnCount);
+  const columnCount = clamp(
+    Math.max(
+      getTableColumnCount(sourceRows),
+      headerLabels.length,
+      Number.isFinite(requestedColumns) ? requestedColumns : 0,
+      MIN_TABLE_COLUMNS,
+    ),
+    MIN_TABLE_COLUMNS,
+    MAX_TABLE_COLUMNS,
+  );
+  const requestedRows = Number(source.rowCount ?? fallback.rowCount);
+  const rowCount = clamp(
+    sourceRows.length ||
+      (Number.isFinite(requestedRows) && requestedRows > 0
+        ? requestedRows
+        : DEFAULT_TABLE_ROWS),
+    MIN_TABLE_ROWS,
+    MAX_TABLE_ROWS,
+  );
+
+  return {
+    caption: `${source.caption ?? fallback.caption ?? ""}`,
+    hasHeader: source.hasHeader !== false,
+    rows: Array.from({ length: rowCount }, (_, rowIndex) => {
+      const row = Array.isArray(sourceRows[rowIndex]) ? sourceRows[rowIndex] : [];
+
+      return Array.from({ length: columnCount }, (_, columnIndex) => {
+        const cell = row[columnIndex];
+        if (cell !== undefined && cell !== null) return `${cell}`;
+        if (rowIndex === 0 && headerLabels[columnIndex]) return `${headerLabels[columnIndex]}`;
+        if (rowIndex === 0 && sourceRows.length === 0) return `Column ${columnIndex + 1}`;
+        return "";
+      });
+    }),
+  };
+};
 
 const createParagraphBlock = (text = "") => ({
   clientId: newBlockId(),
@@ -49,12 +172,36 @@ const createImageBlock = (caption = "") => ({
   metadata: { captionAuto: Boolean(caption), captionUserEdited: false },
 });
 
-const createBlockByType = (type, sectionTitle = "") =>
-  type === "image"
-    ? createImageBlock(getDefaultFigureCaption(sectionTitle))
-    : createParagraphBlock();
+const createTableBlock = (sectionTitle = "", options = {}) => ({
+  clientId: newBlockId(),
+  type: "table",
+  text: "",
+  image: { src: "", alt: "", caption: "" },
+  tableData: createTableData({
+    caption: options.caption || getDefaultTableCaption(sectionTitle),
+    columns: options.columns || options.headers || DEFAULT_TABLE_COLUMNS,
+    headers: options.headers,
+    rowCount: options.rowCount,
+    rows: options.rows,
+  }),
+  metadata: {
+    optional: Boolean(options.optional),
+    captionAuto: true,
+    captionUserEdited: false,
+  },
+});
 
-const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+const createBlockByType = (type, sectionTitle = "") => {
+  if (type === "image") {
+    return createImageBlock(getDefaultFigureCaption(sectionTitle));
+  }
+
+  if (type === "table") {
+    return createTableBlock(sectionTitle);
+  }
+
+  return createParagraphBlock();
+};
 
 const normalizeBlock = (block = {}) => {
   if ((block.type || block.block_type) === "image") {
@@ -69,7 +216,7 @@ const normalizeBlock = (block = {}) => {
         caption: block.image?.caption || block.image_caption || "",
       },
       tableData: null,
-      metadata: block.metadata || null,
+      metadata: parseJsonPayload(block.metadata) || block.metadata || null,
     };
   }
 
@@ -80,8 +227,8 @@ const normalizeBlock = (block = {}) => {
       type: "table",
       text: "",
       image: { src: "", alt: "", caption: "" },
-      tableData: block.tableData || block.table_data || null,
-      metadata: block.metadata || null,
+      tableData: normalizeTableData(block.tableData || block.table_data),
+      metadata: parseJsonPayload(block.metadata) || block.metadata || null,
     };
   }
 
@@ -92,7 +239,7 @@ const normalizeBlock = (block = {}) => {
     text: block.text ?? block.text_content ?? block.content ?? "",
     image: { src: "", alt: "", caption: "" },
     tableData: null,
-    metadata: block.metadata || null,
+    metadata: parseJsonPayload(block.metadata) || block.metadata || null,
   };
 };
 
@@ -111,6 +258,13 @@ const blocksFromSeed = (seedBlocks, sectionTitle = "") => {
           captionUserEdited: false,
         },
       };
+    }
+
+    if (seed.type === "table") {
+      return createTableBlock(sectionTitle, {
+        ...seed,
+        caption: seed.caption || getDefaultTableCaption(sectionTitle),
+      });
     }
 
     return createParagraphBlock();
@@ -156,7 +310,7 @@ const serializeBlock = (block) => {
   if (block.type === "table") {
     return {
       type: "table",
-      tableData: block.tableData || null,
+      tableData: normalizeTableData(block.tableData),
       metadata: block.metadata || null,
     };
   }
@@ -234,6 +388,7 @@ const Editor = () => {
   const textareaRefs = useRef({});
   const imageUrlRefs = useRef({});
   const imageFileInputRefs = useRef({});
+  const tableCellRefs = useRef({});
   const pendingFocusRef = useRef(null);
   const paragraphBlurTimeoutRef = useRef(null);
   const toolsMenuTimerRef = useRef(null);
@@ -287,11 +442,17 @@ const Editor = () => {
     const node =
       pending.type === "image"
         ? imageUrlRefs.current[pending.clientId]
-        : textareaRefs.current[pending.clientId];
+        : pending.type === "table"
+          ? tableCellRefs.current[pending.clientId]
+          : textareaRefs.current[pending.clientId];
 
     if (!node) return;
 
     node.focus();
+
+    if (pending.type === "table" && typeof node.select === "function") {
+      node.select();
+    }
 
     if (pending.type === "paragraph" && typeof node.setSelectionRange === "function") {
       const offset = clamp(pending.offset || 0, 0, node.value.length);
@@ -457,6 +618,108 @@ const Editor = () => {
     );
   };
 
+  const updateTableData = (sectionId, blockIndex, updater) => {
+    updateBlocks(sectionId, (blocks) =>
+      blocks.map((block, index) => {
+        if (index !== blockIndex || block.type !== "table") return block;
+
+        return {
+          ...block,
+          tableData: normalizeTableData(updater(normalizeTableData(block.tableData))),
+        };
+      }),
+    );
+  };
+
+  const handleTableCaptionChange = (sectionId, blockIndex, value) => {
+    updateBlocks(sectionId, (blocks) =>
+      blocks.map((block, index) => {
+        if (index !== blockIndex || block.type !== "table") return block;
+
+        return {
+          ...block,
+          tableData: {
+            ...normalizeTableData(block.tableData),
+            caption: value,
+          },
+          metadata: {
+            ...(block.metadata || {}),
+            captionAuto: false,
+            captionUserEdited: true,
+          },
+        };
+      }),
+    );
+  };
+
+  const handleTableCellChange = (
+    sectionId,
+    blockIndex,
+    rowIndex,
+    columnIndex,
+    value,
+  ) => {
+    updateTableData(sectionId, blockIndex, (table) => {
+      const rows = table.rows.map((row) => [...row]);
+      rows[rowIndex][columnIndex] = value;
+
+      return { ...table, rows };
+    });
+  };
+
+  const addTableRow = (sectionId, blockIndex) => {
+    updateTableData(sectionId, blockIndex, (table) => {
+      if (table.rows.length >= MAX_TABLE_ROWS) return table;
+      const columnCount = getTableColumnCount(table.rows) || DEFAULT_TABLE_COLUMNS;
+
+      return {
+        ...table,
+        rows: [...table.rows, Array.from({ length: columnCount }, () => "")],
+      };
+    });
+  };
+
+  const removeTableRow = (sectionId, blockIndex) => {
+    updateTableData(sectionId, blockIndex, (table) => {
+      if (table.rows.length <= MIN_TABLE_ROWS) return table;
+      return { ...table, rows: table.rows.slice(0, -1) };
+    });
+  };
+
+  const addTableColumn = (sectionId, blockIndex) => {
+    updateTableData(sectionId, blockIndex, (table) => {
+      const columnCount = getTableColumnCount(table.rows);
+      if (columnCount >= MAX_TABLE_COLUMNS) return table;
+
+      return {
+        ...table,
+        rows: table.rows.map((row, rowIndex) => [
+          ...row,
+          table.hasHeader && rowIndex === 0 ? `Column ${columnCount + 1}` : "",
+        ]),
+      };
+    });
+  };
+
+  const removeTableColumn = (sectionId, blockIndex) => {
+    updateTableData(sectionId, blockIndex, (table) => {
+      const columnCount = getTableColumnCount(table.rows);
+      if (columnCount <= MIN_TABLE_COLUMNS) return table;
+
+      return {
+        ...table,
+        rows: table.rows.map((row) => row.slice(0, -1)),
+      };
+    });
+  };
+
+  const toggleTableHeader = (sectionId, blockIndex) => {
+    updateTableData(sectionId, blockIndex, (table) => ({
+      ...table,
+      hasHeader: !table.hasHeader,
+    }));
+  };
+
   const trackParagraphCaret = (sectionId, blockIndex, block, textarea) => {
     const blockClientId = block.clientId || block.id;
     const selectionStart = textarea.selectionStart ?? 0;
@@ -502,10 +765,7 @@ const Editor = () => {
   };
 
   const insertBlockAfter = (sectionId, afterIndex, type) => {
-    const block =
-      type === "image"
-        ? createImageBlock(getDefaultFigureCaption(getSectionTitle(sectionId)))
-        : createBlockByType(type);
+    const block = createBlockByType(type, getSectionTitle(sectionId));
 
     updateBlocks(sectionId, (blocks) => {
       const next = [...blocks];
@@ -525,10 +785,7 @@ const Editor = () => {
   const insertBlockAtCursor = (type, target = insertionTarget) => {
     if (!target) return;
 
-    const insertedBlock =
-      type === "image"
-        ? createImageBlock(getDefaultFigureCaption(getSectionTitle(target.sectionId)))
-        : createBlockByType(type);
+    const insertedBlock = createBlockByType(type, getSectionTitle(target.sectionId));
 
     updateBlocks(target.sectionId, (blocks) => {
       const targetIndex = blocks.findIndex((block, index) => {
@@ -571,7 +828,7 @@ const Editor = () => {
             ? createParagraphBlock(after)
             : { ...sourceBlock, text: after },
         );
-      } else if (!hasBefore && type === "image") {
+      } else if (!hasBefore && type !== "paragraph") {
         replacement.push(createParagraphBlock());
       }
 
@@ -864,9 +1121,18 @@ const Editor = () => {
     return computeFigureLabels(template, sections).labels;
   }, [template, sections]);
 
+  const tableLabels = useMemo(() => {
+    if (!template) return new Map();
+    return computeTableLabels(template, sections).labels;
+  }, [template, sections]);
+
   const estimateSectionHeight = (sectionId) =>
     getBlocksForSection(sectionId).reduce((total, block) => {
       if (block.type === "image") return total + 290;
+      if (block.type === "table") {
+        const table = normalizeTableData(block.tableData);
+        return total + 110 + table.rows.length * 44;
+      }
       const text = block.text || "";
       const lineCount = Math.max(1, text.split("\n").length);
       return total + 44 + lineCount * 22 + text.length * 0.25;
@@ -912,6 +1178,9 @@ const Editor = () => {
             </button>
             <button type="button" onClick={() => insertBlockAfter(sectionId, afterIndex, "image")}>
               <FiImage /> Image
+            </button>
+            <button type="button" onClick={() => insertBlockAfter(sectionId, afterIndex, "table")}>
+              <FiGrid /> Table
             </button>
           </div>
         )}
@@ -1052,6 +1321,129 @@ const Editor = () => {
       );
     }
 
+    if (block.type === "table") {
+      const tableKey = `${sec.id}:${block.clientId || block.id || blockIndex}`;
+      const tableLabel = tableLabels.get(tableKey) || "Table";
+      const table = normalizeTableData(block.tableData, {
+        caption: getDefaultTableCaption(sec.title),
+      });
+      const columnCount = getTableColumnCount(table.rows);
+
+      return (
+        <div key={blockKey} className="content-block table-content-block">
+          <div className="block-type-icon"><FiGrid /></div>
+          <div className="table-block-body">
+            <div className="table-caption-row">
+              <span className="table-number-label">{tableLabel}</span>
+              <input
+                className="table-caption-input"
+                value={table.caption || ""}
+                onChange={(e) =>
+                  handleTableCaptionChange(sec.id, blockIndex, e.target.value)
+                }
+                placeholder="Caption description"
+              />
+            </div>
+
+            <div className="table-controls">
+              <label className="table-header-toggle">
+                <input
+                  type="checkbox"
+                  checked={table.hasHeader}
+                  onChange={() => toggleTableHeader(sec.id, blockIndex)}
+                />
+                Header row
+              </label>
+              <button
+                type="button"
+                className="table-action-button"
+                onClick={() => addTableRow(sec.id, blockIndex)}
+                disabled={table.rows.length >= MAX_TABLE_ROWS}
+                title="Add row"
+              >
+                <FiPlus /> Row
+              </button>
+              <button
+                type="button"
+                className="table-action-button"
+                onClick={() => removeTableRow(sec.id, blockIndex)}
+                disabled={table.rows.length <= MIN_TABLE_ROWS}
+                title="Remove last row"
+              >
+                <FiMinus /> Row
+              </button>
+              <button
+                type="button"
+                className="table-action-button"
+                onClick={() => addTableColumn(sec.id, blockIndex)}
+                disabled={columnCount >= MAX_TABLE_COLUMNS}
+                title="Add column"
+              >
+                <FiPlus /> Column
+              </button>
+              <button
+                type="button"
+                className="table-action-button"
+                onClick={() => removeTableColumn(sec.id, blockIndex)}
+                disabled={columnCount <= MIN_TABLE_COLUMNS}
+                title="Remove last column"
+              >
+                <FiMinus /> Column
+              </button>
+            </div>
+
+            <div className="table-editor-scroll">
+              <table className={`table-editor ${table.hasHeader ? "has-header" : ""}`}>
+                <tbody>
+                  {table.rows.map((row, rowIndex) => (
+                    <tr key={rowIndex}>
+                      {row.map((cell, columnIndex) => {
+                        const Cell = table.hasHeader && rowIndex === 0 ? "th" : "td";
+
+                        return (
+                          <Cell key={`${rowIndex}-${columnIndex}`}>
+                            <textarea
+                              ref={(node) => {
+                                if (rowIndex !== 0 || columnIndex !== 0) return;
+                                if (node) tableCellRefs.current[blockKey] = node;
+                                else delete tableCellRefs.current[blockKey];
+                              }}
+                              value={cell}
+                              onChange={(e) =>
+                                handleTableCellChange(
+                                  sec.id,
+                                  blockIndex,
+                                  rowIndex,
+                                  columnIndex,
+                                  e.target.value,
+                                )
+                              }
+                              onInput={(e) => {
+                                e.target.style.height = "auto";
+                                e.target.style.height = `${e.target.scrollHeight}px`;
+                              }}
+                              className="table-cell-input"
+                              rows={1}
+                              placeholder={
+                                table.hasHeader && rowIndex === 0
+                                  ? `Column ${columnIndex + 1}`
+                                  : ""
+                              }
+                            />
+                          </Cell>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {renderBlockActions(sec.id, blockIndex, totalBlocks)}
+        </div>
+      );
+    }
+
     return (
       <div
         key={blockKey}
@@ -1088,6 +1480,9 @@ const Editor = () => {
                   </button>
                   <button type="button" onClick={() => insertBlockAtCursor("image")}>
                     <FiImage /> Image
+                  </button>
+                  <button type="button" onClick={() => insertBlockAtCursor("table")}>
+                    <FiGrid /> Table
                   </button>
                 </div>
               )}

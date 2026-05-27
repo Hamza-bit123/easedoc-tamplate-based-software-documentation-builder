@@ -73,8 +73,12 @@ const getSectionBlocks = (contentObj = {}) => {
 const blockRegistryKey = (sectionId, block, blockIndex) =>
   `${sectionId}:${block.clientId || block.id || blockIndex}`;
 
-export const computeFigureLabels = (template, sectionsState = {}) => {
-  const rule = getFigureNumberingRule(template);
+const withPrefix = (rule, prefix) => ({
+  ...rule,
+  prefix,
+});
+
+const computeBlockLabels = (template, sectionsState, blockType, rule) => {
   const numberedSections = buildSectionNumbers(template.sections || []);
   const labels = new Map();
   let documentCounter = 0;
@@ -84,7 +88,7 @@ export const computeFigureLabels = (template, sectionsState = {}) => {
     const blocks = getSectionBlocks(sectionsState[sec.id] || {});
 
     blocks.forEach((block, blockIndex) => {
-      if ((block.type || block.block_type) !== "image") return;
+      if ((block.type || block.block_type) !== blockType) return;
 
       const key = blockRegistryKey(sec.id, block, blockIndex);
       let label;
@@ -95,10 +99,10 @@ export const computeFigureLabels = (template, sectionsState = {}) => {
       } else {
         const sectionNumber = sec.number;
         sectionCounters[sectionNumber] = (sectionCounters[sectionNumber] || 0) + 1;
-        const figureIndex = sectionCounters[sectionNumber];
+        const itemIndex = sectionCounters[sectionNumber];
         label = rule.includeSectionNumber
-          ? `${rule.prefix} ${sectionNumber}${rule.separator}${figureIndex}`
-          : `${rule.prefix} ${figureIndex}`;
+          ? `${rule.prefix} ${sectionNumber}${rule.separator}${itemIndex}`
+          : `${rule.prefix} ${itemIndex}`;
       }
 
       labels.set(key, label);
@@ -108,12 +112,24 @@ export const computeFigureLabels = (template, sectionsState = {}) => {
   return { labels, rule };
 };
 
+export const computeFigureLabels = (template, sectionsState = {}) => {
+  const rule = getFigureNumberingRule(template);
+  return computeBlockLabels(template, sectionsState, "image", rule);
+};
+
+export const computeTableLabels = (template, sectionsState = {}) => {
+  const rule = withPrefix(getFigureNumberingRule(template), "Table");
+  return computeBlockLabels(template, sectionsState, "table", rule);
+};
+
 export const formatExportedFigureCaption = (label, userCaption = "") => {
   const text = `${userCaption || ""}`.trim();
   if (!text) return label;
   if (text.toLowerCase().startsWith(label.toLowerCase())) return text;
   return `${label}: ${text}`;
 };
+
+export const formatExportedTableCaption = formatExportedFigureCaption;
 
 const SECTION_CAPTION_HINTS = [
   { match: /architecture view/i, caption: "Architecture view" },
@@ -131,6 +147,22 @@ const SECTION_CAPTION_HINTS = [
 export const getDefaultFigureCaption = (sectionTitle = "") => {
   const hint = SECTION_CAPTION_HINTS.find(({ match }) => match.test(sectionTitle));
   return hint?.caption || "Illustration";
+};
+
+const TABLE_CAPTION_HINTS = [
+  { match: /traceability/i, caption: "Requirements traceability matrix" },
+  { match: /verification|validation/i, caption: "Verification matrix" },
+  { match: /stakeholder|concern/i, caption: "Stakeholder concern matrix" },
+  { match: /viewpoint/i, caption: "Viewpoint concern mapping" },
+  { match: /component/i, caption: "Component responsibility table" },
+  { match: /data design|data/i, caption: "Data entity summary" },
+  { match: /interface/i, caption: "Interface summary table" },
+  { match: /requirement/i, caption: "Requirements summary" },
+];
+
+export const getDefaultTableCaption = (sectionTitle = "") => {
+  const hint = TABLE_CAPTION_HINTS.find(({ match }) => match.test(sectionTitle));
+  return hint?.caption || "Table";
 };
 
 export const parseSeedBlocks = (seedBlocks) => {

@@ -270,32 +270,32 @@ INSERT INTO `template_section_versions`
 VALUES
   (1, 1, 'Introduction', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 1, NULL),
   (2, 1, 'Overall Description', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 2, NULL),
-  (3, 1, 'Specific Requirements', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 3, NULL),
+  (3, 1, 'Specific Requirements', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 3, '[{"type":"paragraph"},{"type":"table","optional":true,"caption":"Functional requirements summary","columns":["Requirement ID","Description","Priority","Source"],"rowCount":4}]'),
   (4, 1, 'External Interface Requirements', 1, 0, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 4, '[{"type":"paragraph"},{"type":"image","optional":true,"caption":"External interface diagram"}]'),
   (5, 1, 'Non-functional Requirements', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 5, NULL),
 
   (6, 2, 'Purpose and Scope', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 1, NULL),
   (7, 2, 'Stakeholders and System Context', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 2, '[{"type":"paragraph"},{"type":"image","optional":true,"caption":"System context diagram"}]'),
   (8, 2, 'System Requirements', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 3, NULL),
-  (9, 2, 'Verification and Validation Criteria', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 4, NULL),
+  (9, 2, 'Verification and Validation Criteria', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 4, '[{"type":"paragraph"},{"type":"table","optional":true,"caption":"Verification matrix","columns":["Requirement ID","Verification Method","Acceptance Criteria","Status"],"rowCount":4}]'),
 
   (10, 3, 'Introduction', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 1, NULL),
   (11, 3, 'System Architecture', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 2, '[{"type":"paragraph"},{"type":"image","optional":true,"caption":"System architecture diagram"}]'),
-  (12, 3, 'Data Design', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 3, NULL),
+  (12, 3, 'Data Design', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 3, '[{"type":"paragraph"},{"type":"table","optional":true,"caption":"Data entity summary","columns":["Entity","Description","Owner","Retention"],"rowCount":4}]'),
   (13, 3, 'Interface Design', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 4, '[{"type":"paragraph"},{"type":"image","optional":true,"caption":"Interface diagram"}]'),
   (14, 3, 'Deployment Design', 1, 0, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 5, NULL),
 
   (15, 4, 'Introduction', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 1, NULL),
   (16, 4, 'Design Overview', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 2, NULL),
   (17, 4, 'Architectural Design', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 3, '[{"type":"paragraph"},{"type":"image","optional":true,"caption":"Architectural design diagram"}]'),
-  (18, 4, 'Component Design', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 4, NULL),
+  (18, 4, 'Component Design', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 4, '[{"type":"paragraph"},{"type":"table","optional":true,"caption":"Component responsibility table","columns":["Component","Responsibility","Interfaces","Dependencies"],"rowCount":4}]'),
   (19, 4, 'Data Design', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 5, NULL),
   (20, 4, 'Interface Design', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 6, '[{"type":"paragraph"},{"type":"image","optional":true,"caption":"Interface diagram"}]'),
-  (21, 4, 'Requirements Traceability', 1, 0, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 7, NULL),
+  (21, 4, 'Requirements Traceability', 1, 0, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 7, '[{"type":"paragraph"},{"type":"table","optional":true,"caption":"Requirements traceability matrix","columns":["Requirement ID","Design Element","Verification Method","Status"],"rowCount":4}]'),
 
   (22, 5, 'Architecture Purpose', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 1, NULL),
-  (23, 5, 'Stakeholders and Concerns', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 2, NULL),
-  (24, 5, 'Architecture Viewpoints', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 3, NULL),
+  (23, 5, 'Stakeholders and Concerns', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 2, '[{"type":"paragraph"},{"type":"table","optional":true,"caption":"Stakeholder concern matrix","columns":["Stakeholder","Concern","Viewpoint","Priority"],"rowCount":4}]'),
+  (24, 5, 'Architecture Viewpoints', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 3, '[{"type":"paragraph"},{"type":"table","optional":true,"caption":"Viewpoint concern mapping","columns":["Viewpoint","Concern","Model Kind","Stakeholder"],"rowCount":4}]'),
   (25, 5, 'Architecture Views', 1, 1, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'numbered', 10, 10, 0, 4, '[{"type":"paragraph"},{"type":"image","optional":true,"caption":"Architecture view"}]'),
   (26, 5, 'Architecture Decisions', 1, 0, 16, 'bold', 'left', 12, 'normal', 'justify', 1.5, 'none', 10, 10, 0, 5, NULL);
 

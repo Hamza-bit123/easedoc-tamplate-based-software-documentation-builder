@@ -7,12 +7,64 @@ import {
   AlignmentType,
   TextRun,
   ImageRun,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+  BorderStyle,
 } from "docx";
 import {
   buildSectionNumbers,
   computeFigureLabels,
+  computeTableLabels,
   formatExportedFigureCaption,
+  formatExportedTableCaption,
 } from "../utils/figureNumbering.js";
+
+const parseJsonPayload = (value) => {
+  if (!value || typeof value !== "string") return value || null;
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+};
+
+const getTableColumnCount = (rows = []) =>
+  rows.reduce((max, row) => Math.max(max, Array.isArray(row) ? row.length : 0), 0);
+
+const normalizeTableData = (value) => {
+  const parsed = parseJsonPayload(value) || {};
+  const source = Array.isArray(parsed) ? { rows: parsed } : parsed;
+  const sourceRows = Array.isArray(source.rows)
+    ? source.rows
+    : Array.isArray(source.cells)
+      ? source.cells
+      : [];
+  const headers = Array.isArray(source.headers)
+    ? source.headers
+    : Array.isArray(source.columns)
+      ? source.columns
+      : [];
+  const columnCount = Math.max(getTableColumnCount(sourceRows), headers.length, 1);
+  const rowCount = Math.max(sourceRows.length, headers.length ? 1 : 0);
+
+  return {
+    caption: `${source.caption || ""}`,
+    hasHeader: source.hasHeader !== false,
+    rows: Array.from({ length: rowCount }, (_, rowIndex) => {
+      const row = Array.isArray(sourceRows[rowIndex]) ? sourceRows[rowIndex] : [];
+
+      return Array.from({ length: columnCount }, (_, columnIndex) => {
+        const cell = row[columnIndex];
+        if (cell !== undefined && cell !== null) return `${cell}`;
+        if (rowIndex === 0 && headers[columnIndex]) return `${headers[columnIndex]}`;
+        return "";
+      });
+    }),
+  };
+};
 
 const getSectionBlocks = (contentObj = {}) => {
   if (Array.isArray(contentObj.blocks) && contentObj.blocks.length > 0) {
@@ -99,6 +151,7 @@ export const exportWordService = async (template, sectionsMap, res) => {
   try {
     template.sections = buildSectionNumbers(template.sections);
     const figureLabels = computeFigureLabels(template, sectionsMap).labels;
+    const tableLabels = computeTableLabels(template, sectionsMap).labels;
 
     const children = [];
 
@@ -196,6 +249,92 @@ export const exportWordService = async (template, sectionsMap, res) => {
         children.push(new Paragraph(baseOptions));
       };
 
+      const pushTable = (block, blockIndex) => {
+        const table = normalizeTableData(block.tableData);
+        const tableKey = `${sec.id}:${block.clientId || block.id || blockIndex}`;
+        const tableLabel = tableLabels.get(tableKey) || "Table";
+        const captionText = formatExportedTableCaption(
+          tableLabel,
+          table.caption || "",
+        );
+
+        if (captionText) {
+          children.push(
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: captionText,
+                  size: Math.max(18, (sec.body_font_size - 1) * 2),
+                  bold: true,
+                  color: "111827",
+                }),
+              ],
+              alignment: AlignmentType.LEFT,
+              spacing: { before: 160, after: 80 },
+              indent: { left: indent },
+            }),
+          );
+        }
+
+        if (!table.rows.length) return;
+
+        const columnCount = getTableColumnCount(table.rows) || 1;
+        const border = {
+          style: BorderStyle.SINGLE,
+          size: 1,
+          color: "9CA3AF",
+        };
+
+        children.push(
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: {
+              top: border,
+              bottom: border,
+              left: border,
+              right: border,
+              insideHorizontal: border,
+              insideVertical: border,
+            },
+            rows: table.rows.map(
+              (row, rowIndex) =>
+                new TableRow({
+                  children: row.map((cell) => {
+                    const isHeader = table.hasHeader && rowIndex === 0;
+
+                    return new TableCell({
+                      width: {
+                        size: Math.floor(100 / columnCount),
+                        type: WidthType.PERCENTAGE,
+                      },
+                      shading: isHeader ? { fill: "EEF2FF" } : undefined,
+                      margins: {
+                        top: 120,
+                        bottom: 120,
+                        left: 120,
+                        right: 120,
+                      },
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({
+                              text: cell || " ",
+                              size: sec.body_font_size * 2,
+                              bold: isHeader,
+                              color: "000000",
+                            }),
+                          ],
+                          alignment: AlignmentType.LEFT,
+                        }),
+                      ],
+                    });
+                  }),
+                }),
+            ),
+          }),
+        );
+      };
+
       blocks.forEach((block, blockIndex) => {
         if (block.type === "image") {
           const figureKey = `${sec.id}:${block.clientId || block.id || blockIndex}`;
@@ -237,7 +376,7 @@ export const exportWordService = async (template, sectionsMap, res) => {
         }
 
         if (block.type === "table") {
-          pushParagraphText("");
+          pushTable(block, blockIndex);
           return;
         }
 

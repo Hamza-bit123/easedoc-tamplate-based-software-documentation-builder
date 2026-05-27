@@ -39,6 +39,44 @@ const normalizeTitle = (value) => (value || "").trim().toLowerCase();
 
 const hasText = (value) => value !== null && value !== undefined && `${value}`.trim() !== "";
 
+const parseJsonPayload = (value) => {
+  if (!value || typeof value !== "string") return value || null;
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+};
+
+const tableHasBodyContent = (tableData) => {
+  const parsed = parseJsonPayload(tableData) || {};
+  const source = Array.isArray(parsed) ? { rows: parsed } : parsed;
+  const rows = Array.isArray(source.rows)
+    ? source.rows
+    : Array.isArray(source.cells)
+      ? source.cells
+      : [];
+  const bodyRows = source.hasHeader === false ? rows : rows.slice(1);
+
+  return bodyRows.some(
+    (row) => Array.isArray(row) && row.some((cell) => hasText(cell)),
+  );
+};
+
+const blockHasContent = (row) => {
+  switch (row.block_type) {
+    case "paragraph":
+      return hasText(row.text_content);
+    case "image":
+      return hasText(row.image_src);
+    case "table":
+      return tableHasBodyContent(row.table_data);
+    default:
+      return false;
+  }
+};
+
 const getTimestampCode = () => {
   const now = new Date();
   const pad = (value) => `${value}`.padStart(2, "0");
@@ -249,17 +287,10 @@ export const validateDocumentService = async (documentId) => {
         tsv.title, 
         tsv.is_required, 
         ds.content,
-        SUM(
-          CASE
-            WHEN b.block_type = 'paragraph'
-              AND COALESCE(TRIM(b.text_content), '') <> '' THEN 1
-            WHEN b.block_type = 'image'
-              AND COALESCE(TRIM(b.image_src), '') <> '' THEN 1
-            WHEN b.block_type = 'table'
-              AND COALESCE(TRIM(b.table_data), '') <> '' THEN 1
-            ELSE 0
-          END
-        ) AS filled_blocks
+        b.block_type,
+        b.text_content,
+        b.image_src,
+        b.table_data
       FROM document_sections ds
       JOIN documents d ON ds.document_id = d.id
       JOIN template_section_versions tsv 
@@ -269,18 +300,36 @@ export const validateDocumentService = async (documentId) => {
       LEFT JOIN document_section_blocks b
         ON b.document_section_id = ds.id
       WHERE ds.document_id = ?
-      GROUP BY tsv.id, tsv.title, tsv.is_required, ds.content
+      ORDER BY tsv.section_order ASC, b.block_order ASC, b.id ASC
     `;
 
     db.query(sql, [documentId], (err, results) => {
       if (err) return reject(err);
 
-      const errors = results
+      const sectionsById = new Map();
+
+      results.forEach((row) => {
+        if (!sectionsById.has(row.id)) {
+          sectionsById.set(row.id, {
+            id: row.id,
+            title: row.title,
+            is_required: row.is_required,
+            content: row.content,
+            hasFilledBlock: false,
+          });
+        }
+
+        if (row.block_type && blockHasContent(row)) {
+          sectionsById.get(row.id).hasFilledBlock = true;
+        }
+      });
+
+      const errors = Array.from(sectionsById.values())
         .filter(
           (r) =>
             r.is_required &&
             !hasText(r.content) &&
-            Number(r.filled_blocks || 0) === 0,
+            !r.hasFilledBlock,
         )
         .map((r) => ({
           section_id: r.id,

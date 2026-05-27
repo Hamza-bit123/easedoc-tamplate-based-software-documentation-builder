@@ -358,13 +358,14 @@ export const customizeTemplateService = async (templateId, userId) => {
         newVersionId, s.title, s.level, s.is_required, 
         s.title_font_size, s.title_font_weight, s.title_text_align,
         s.body_font_size, s.body_font_weight, s.body_text_align,
-        s.line_height, s.list_type, s.margin_top, s.margin_bottom, s.padding_left, i + 1
+        s.line_height, s.list_type, s.margin_top, s.margin_bottom, s.padding_left, i + 1,
+        s.seed_blocks || null
       ]);
       await db.promise().query(
         `INSERT INTO template_section_versions (template_version_id, title, level, is_required, 
           title_font_size, title_font_weight, title_text_align,
           body_font_size, body_font_weight, body_text_align,
-          line_height, list_type, margin_top, margin_bottom, padding_left, section_order)
+          line_height, list_type, margin_top, margin_bottom, padding_left, section_order, seed_blocks)
          VALUES ?`,
         [sectionValues]
       );

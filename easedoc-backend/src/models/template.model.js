@@ -89,7 +89,8 @@ export const insertTemplateSectionVersions = (versionId, sections) => {
         margin_bottom,
         padding_left,
 
-        section_order
+        section_order,
+        seed_blocks
       ) VALUES ?
     `;
 
@@ -115,6 +116,7 @@ export const insertTemplateSectionVersions = (versionId, sections) => {
       sec.padding_left,
 
       index + 1,
+      sec.seed_blocks || null,
     ]);
 
     db.query(sql, [values], (err) => {
