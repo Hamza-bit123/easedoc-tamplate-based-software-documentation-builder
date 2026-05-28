@@ -13,7 +13,7 @@ const Popup = ({
     showCancel,
     showInput,
     placeholder,
-    initialValue = ''
+    initialValue
 }) => {
     const [inputValue, setInputValue] = useState(initialValue);
 
@@ -35,7 +35,7 @@ const Popup = ({
     return (
         <div className="popup-overlay animate-fade-in" onClick={handleBackdropClick}>
             <div className="popup-card animate-scale-up" onClick={e => e.stopPropagation()}>
-                <button className="popup-close" onClick={onCancel || onConfirm}><FiX /></button>
+                <button className="popup-close" onClick={onCancel}><FiX /></button>
                 <div className="popup-content">
                     <div className="icon-container">
                         {icons[type] || icons.warning}

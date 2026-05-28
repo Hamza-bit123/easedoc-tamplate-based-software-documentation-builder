@@ -8,6 +8,7 @@ import {
 import { FiUsers, FiSettings, FiFileText, FiLogOut, FiX } from "react-icons/fi";
 import { HiOutlineSparkles } from "react-icons/hi2";
 import { LuSun, LuMoon } from "react-icons/lu";
+import toast from "react-hot-toast";
 import "./Sidebar.css";
 import { AuthContext } from "../context/AuthContext";
 
@@ -109,30 +110,51 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           <p className="nav-label">
             {role === "admin" ? "Administration" : "Workspace"}
           </p>
-          {currentMenu.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.path.split("/").length <= 2}
-              onClick={handleNavClick}
-              className={({ isActive }) =>
-                isActive ? "nav-item active" : "nav-item"
-              }
-            >
-              <span className="icon">{item.icon}</span>
-              <span>{item.label}</span>
-            </NavLink>
-          ))}
+          {currentMenu.map((item) => {
+            if (item.path === "/admin/settings") {
+              return (
+                <div
+                  key={item.path}
+                  className="nav-item disabled-nav-item"
+                  onClick={() => toast("Settings are temporarily disabled for admins.", { duration: 5000, icon: '🔒' })}
+                >
+                  <span className="icon">{item.icon}</span>
+                  <span>{item.label}</span>
+                </div>
+              );
+            }
+
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                end={item.path.split("/").length <= 2}
+                onClick={handleNavClick}
+                className={({ isActive }) =>
+                  isActive ? "nav-item active" : "nav-item"
+                }
+              >
+                <span className="icon">{item.icon}</span>
+                <span>{item.label}</span>
+              </NavLink>
+            );
+          })}
         </div>
       </nav>
 
       <div className="sidebar-footer">
-        <button className="nav-item" onClick={toggleTheme}>
-          <span className="icon">
-            {isDark ? <LuSun size={22} /> : <LuMoon size={22} />}
-          </span>
-          <span>{isDark ? "Light Mode" : "Dark Mode"}</span>
-        </button>
+        <div className="beautiful-theme-toggle" onClick={toggleTheme} title={`Switch to ${isDark ? "Light" : "Dark"} Mode`}>
+          <div className={`theme-track ${isDark ? "dark" : "light"}`}>
+            <div className="theme-thumb">
+              {isDark ? <LuMoon size={14} color="#facc15" /> : <LuSun size={14} color="#f59e0b" />}
+            </div>
+            <div className="theme-icons-bg">
+              <LuMoon size={12} color="#a1a1aa" />
+              <LuSun size={12} color="#fcd34d" />
+            </div>
+          </div>
+          <span className="theme-label">{isDark ? "Dark Mode" : "Light Mode"}</span>
+        </div>
 
         <div className="sidebar-profile-container" ref={profileRef}>
           <button 

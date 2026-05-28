@@ -31,7 +31,7 @@ const UserDashboard = () => {
   }, []);
 
   if (loading) return (
-    <EasDocLoader message="Loading your workspace..." />
+    <EasDocLoader message="Loading your workspace" />
   );
   
   if (!data) return <div className="text-center p-20">Failed to load dashboard data.</div>;

@@ -63,10 +63,10 @@ export const PopupProvider = ({ children }) => {
                     message={popup.message}
                     title={popup.title}
                     onConfirm={handleConfirm}
-                    onCancel={popup.onCancel || popup.showInput ? handleCancel : handleConfirm}
+                    onCancel={handleCancel}
                     confirmText={popup.confirmText}
                     cancelText={popup.cancelText}
-                    showCancel={!!popup.onCancel || popup.showInput}
+                    showCancel={true}
                     showInput={popup.showInput}
                     placeholder={popup.placeholder}
                     initialValue={popup.initialValue}

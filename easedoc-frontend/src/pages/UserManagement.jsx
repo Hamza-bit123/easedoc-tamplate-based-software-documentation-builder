@@ -4,6 +4,7 @@ import { FiTrash2 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import { usePopup } from "../context/PopupContext";
 import "./UserManagement.css";
+import EasDocLoader from "../components/EasDocLoader";
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -54,11 +55,7 @@ const UserManagement = () => {
     });
   };
 
-  if (loading) return (
-    <div className="flex items-center justify-center p-20">
-      <div className="animate-pulse text-muted">Loading users...</div>
-    </div>
-  );
+  if (loading) return <EasDocLoader message="Loading users" />;
 
   return (
     <div className="user-management-page animate-fade-in">

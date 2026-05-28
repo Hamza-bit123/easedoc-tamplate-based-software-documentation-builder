@@ -1,11 +1,14 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useContext } from "react";
 import "./CreateTemplate.css";
 import api from "../api/axios";
 import { useParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { AuthContext } from "../context/AuthContext";
 
 const CreateTemplate = () => {
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
+  const isAdmin = user?.role === "admin";
   const [template, setTemplate] = useState({
     name: "",
     description: "",
@@ -116,7 +119,8 @@ const CreateTemplate = () => {
         });
 
         toast.success("Template updated successfully");
-        navigate("/admin/templates");
+        // Admins go back to the admin templates list; users go to their template's detail page
+        navigate(isAdmin ? "/admin/templates" : `/user/templates/details/${id}`);
       } else {
         await api.post("/templates", {
           ...template,
@@ -126,7 +130,7 @@ const CreateTemplate = () => {
         });
 
         toast.success("Template created successfully");
-        navigate("/admin/templates");
+        navigate(isAdmin ? "/admin/templates" : "/user/templates");
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to save template.");

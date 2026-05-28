@@ -69,7 +69,11 @@ function App() {
               <Route index element={<MyDocuments />} />
               <Route path="create" element={<CreateDocument />} />
             </Route>
-            <Route path="templates" element={<UserTemplates />} />
+            <Route path="templates">
+              <Route index element={<UserTemplates />} />
+              <Route path="details/:id" element={<TemplateDetails />} />
+              <Route path="edit/:id" element={<CreateTemplate />} />
+            </Route>
           </Route>
 
           {/* SHARED PROTECTED ROUTES */}

@@ -136,7 +136,7 @@ const MyDocuments = () => {
 
   if (loading)
     return (
-      <EasDocLoader message="Fetching your documents..." />
+      <EasDocLoader message="Fetching your documents" />
     );
 
   return (

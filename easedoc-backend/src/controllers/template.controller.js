@@ -120,6 +120,15 @@ export const getTemplateDetailsController = async (req, res) => {
 export const getTemplateUsageController = async (req, res) => {
   try {
     const templateId = req.params.id;
+
+    // Ownership check for non-admins
+    if (req.user.role !== "admin") {
+      const details = await getTemplateDetailsService(templateId);
+      if (details.created_by !== req.user.id) {
+        return res.status(403).json({ message: "You can only view usage for your own templates." });
+      }
+    }
+
     const usage = await getTemplateUsageService(templateId);
     res.json(usage);
   } catch (err) {

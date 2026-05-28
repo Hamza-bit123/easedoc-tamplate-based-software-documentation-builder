@@ -2,6 +2,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { useParams, useBlocker } from "react-router-dom";
 import api from "../api/axios";
 import "./Editor.css";
+import EasDocLoader from "../components/EasDocLoader";
 import generatePrintHTML from "../utils/generatePrintHTML";
 import {
   buildSectionNumbers,
@@ -1529,15 +1530,8 @@ const Editor = () => {
     );
   };
 
-  if (loadError) return <div className="editor-loading"><p>{loadError}</p></div>;
-  if (!template) {
-    return (
-      <div className="editor-loading">
-        <div className="loader"></div>
-        <p>Preparing Workspace...</p>
-      </div>
-    );
-  }
+  if (loadError) return <EasDocLoader message={loadError} />;
+  if (!template) return <EasDocLoader message="Preparing Workspace" />;
 
   const numberedSections = buildSectionNumbers(template.sections);
   const pages = paginateSections(numberedSections);

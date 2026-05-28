@@ -7,6 +7,7 @@ import { FaServer } from "react-icons/fa";
 import { BiEdit, BiPlus } from "react-icons/bi";
 import { BsEye, BsTrash2 } from "react-icons/bs";
 import toast from "react-hot-toast";
+import ComponentLoader from "../components/ComponentLoader";
 
 const DOC_TYPES = [
   {
@@ -177,9 +178,7 @@ const AdminTemplates = () => {
           </div>
 
           {loading ? (
-            <div className="p-10 flex items-center justify-center">
-              <div className="animate-pulse text-muted">Loading templates...</div>
-            </div>
+            <ComponentLoader message="Loading templates" />
           ) : (
             <div className="template-table-wrapper">
               <table className="template-table">
@@ -265,7 +264,7 @@ const AdminTemplates = () => {
 
             <div className="modal-body">
               {deleteLoading && !usageInfo ? (
-                <div className="animate-pulse py-4 text-center">Checking template usage...</div>
+                <ComponentLoader message="Checking template usage" />
               ) : usageInfo ? (
                 <>
                   <div className="warning-box">

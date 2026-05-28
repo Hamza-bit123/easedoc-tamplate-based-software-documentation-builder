@@ -67,7 +67,7 @@ const MainLayout = () => {
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
-  if (loading) return <EasDocLoader message="Initializing system environment..." />;
+  if (loading) return <EasDocLoader message="Initializing system environment" />;
   if (!user) return <Navigate to="/login" />;
 
   const isEditor = location.pathname.includes("/editor");
@@ -89,7 +89,6 @@ const MainLayout = () => {
         )}
         <div
           className={`smart-header-wrapper${!showHeader ? ' header-hidden' : ''}`}
-          style={{ overflow: 'hidden' }}
         >
           <Header user={user} toggleSidebar={toggleSidebar} />
         </div>

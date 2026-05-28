@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import "./Dashboard.css";
+import EasDocLoader from "../components/EasDocLoader";
 
 const AdminDashboard = () => {
   const [data, setData] = useState(null);
@@ -29,7 +30,7 @@ const AdminDashboard = () => {
     fetchData();
   }, []);
 
-  if (loading) return <div>Loading dashboard...</div>;
+  if (loading) return <EasDocLoader message="Loading dashboard" />;
   if (!data) return <div>Failed to load dashboard data.</div>;
 
   const { stats, recentDocuments, docsByType } = data;

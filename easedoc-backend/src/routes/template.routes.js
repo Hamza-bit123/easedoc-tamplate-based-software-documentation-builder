@@ -18,7 +18,7 @@ const router = express.Router();
 router.post("/", verifyToken, createTemplateController);
 router.get("/type/:typeId", verifyToken, getTemplatesByTypeController);
 router.get("/:id/details", getTemplateDetailsController);
-router.get("/:id/usage", verifyToken, isAdmin, getTemplateUsageController);
+router.get("/:id/usage", verifyToken, getTemplateUsageController);
 router.get("/:id/full", getTemplateWithSectionsController);
 router.get("/:id/version/:versionId/full", getTemplateSpecificVersionController);
 router.put("/:id", updateTemplateController);

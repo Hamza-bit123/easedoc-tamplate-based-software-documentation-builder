@@ -328,6 +328,7 @@
   pointer-events: none;
   transition: opacity 0.18s ease, transform 0.18s ease;
   transform: translateY(-2px);
+  z-index: 10;
 }
 
 .section-blocks:hover .block-add-row,
@@ -337,6 +338,7 @@
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
+  z-index: 50;
 }
 
 .block-add-row::before {
@@ -371,7 +373,7 @@
   position: absolute;
   top: 28px;
   right: 0;
-  z-index: 20;
+  z-index: 150;
   min-width: 156px;
   padding: var(--space-2);
   border: 1px solid var(--border-color);
