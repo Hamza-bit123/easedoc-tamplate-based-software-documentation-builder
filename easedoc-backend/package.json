@@ -12,6 +12,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@sparticuz/chromium": "^147.0.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "docx": "^9.6.1",
@@ -20,7 +21,7 @@
     "jsonwebtoken": "^9.0.3",
     "mysql2": "^3.22.0",
     "nodemailer": "^8.0.7",
-    "puppeteer-core": "^24.42.0",
+    "puppeteer": "^25.1.0",
     "sib-api-v3-sdk": "^8.5.0"
   },
   "devDependencies": {

@@ -1,4 +1,5 @@
-import puppeteer from "puppeteer-core";
+import puppeteer from "puppeteer";
+import chromium from "@sparticuz/chromium";
 import {
   Document,
   Packer,
@@ -115,10 +116,13 @@ const imageRunFromDataUrl = (src) => {
 };
 
 export const exportPDFService = async (html, res) => {
+  const isProduction = process.env.NODE_ENV === "production" || process.env.RENDER;
+
   const browser = await puppeteer.launch({
-    executablePath:
-      "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-    headless: "new",
+    args: isProduction ? chromium.args : [],
+    defaultViewport: chromium.defaultViewport,
+    executablePath: isProduction ? await chromium.executablePath() : undefined,
+    headless: isProduction ? chromium.headless : true,
   });
 
   const page = await browser.newPage();
