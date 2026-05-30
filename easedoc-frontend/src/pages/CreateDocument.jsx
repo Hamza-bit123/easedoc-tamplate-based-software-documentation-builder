@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import api from "../api/axios";
 import "./CreateDocument.css";
 import { useNavigate } from "react-router-dom";
@@ -22,6 +22,14 @@ const CreateDocument = () => {
   const [documentTitles, setDocumentTitles] = useState({});
   const navigate = useNavigate();
   const { showPopup } = usePopup();
+  const standardsSectionRef = useRef(null);
+  const templatesSectionRef = useRef(null);
+
+  const scrollToSection = (ref) => {
+    requestAnimationFrame(() => {
+      ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
 
   const getDefaultTitle = (templateName) => {
     const now = new Date();
@@ -110,6 +118,26 @@ const CreateDocument = () => {
     fetchTypes();
   }, []);
 
+  useEffect(() => {
+    if (!selectedType) return;
+
+    const timer = window.setTimeout(() => {
+      scrollToSection(standardsSectionRef);
+    }, 120);
+
+    return () => window.clearTimeout(timer);
+  }, [selectedType, standards]);
+
+  useEffect(() => {
+    if (!selectedStandard) return;
+
+    const timer = window.setTimeout(() => {
+      scrollToSection(templatesSectionRef);
+    }, 120);
+
+    return () => window.clearTimeout(timer);
+  }, [selectedStandard, templates]);
+
   return (
     <div className="dashboard">
       <h1>Start New Document</h1>
@@ -141,7 +169,7 @@ const CreateDocument = () => {
       </div>
 
       {selectedType && (
-        <div className="card">
+        <div className="card create-doc-step" ref={standardsSectionRef} id="create-doc-standards">
           <h2>Select Standard</h2>
 
           {standards.length === 0 ? (
@@ -166,7 +194,7 @@ const CreateDocument = () => {
         </div>
       )}
       {selectedStandard && (
-        <div className="card">
+        <div className="card create-doc-step" ref={templatesSectionRef} id="create-doc-templates">
           <h2>Available Templates</h2>
 
           {templates.length === 0 ? (

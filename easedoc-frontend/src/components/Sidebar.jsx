@@ -94,12 +94,12 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   return (
     <aside className={`sidebar ${isOpen ? "open" : "closed"}`}>
       <div className="sidebar-brand">
-        <div className="brand-wrapper" style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+        <Link to="/" className="brand-wrapper" style={{display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none', color: 'inherit'}}>
           <div className="brand-icon">
             <HiOutlineSparkles size={28} />
           </div>
           <h2 className="brand-text">EasDoc</h2>
-        </div>
+        </Link>
         <button className="sidebar-close-btn" onClick={toggleSidebar}>
           <FiX size={24} />
         </button>
@@ -181,6 +181,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 onClick={() => {
                   setIsProfileOpen(false);
                   logout();
+                  navigate("/");
                 }}
               >
                 <FiLogOut size={18} /> Log Out

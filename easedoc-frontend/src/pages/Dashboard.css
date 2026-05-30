@@ -152,7 +152,21 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.activity-item:hover {
+.activity-item-clickable {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.activity-item-clickable:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.activity-item:hover,
+.activity-item-clickable:hover {
   background: var(--bg-card);
   transform: translateX(6px);
   border-color: var(--primary-light);

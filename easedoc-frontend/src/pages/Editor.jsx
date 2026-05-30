@@ -33,6 +33,7 @@ import {
 } from "react-icons/fi";
 import { BiSolidFileDoc } from "react-icons/bi";
 import toast from "react-hot-toast";
+import { usePopup } from "../context/PopupContext";
 
 const newBlockId = () =>
   `block-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -372,6 +373,7 @@ const getCaretTop = (textarea) => {
 
 const Editor = () => {
   const { documentId } = useParams();
+  const { showPopup } = usePopup();
 
   const [template, setTemplate] = useState(null);
   const [sections, setSections] = useState({});
@@ -392,6 +394,7 @@ const Editor = () => {
   const tableCellRefs = useRef({});
   const pendingFocusRef = useRef(null);
   const paragraphBlurTimeoutRef = useRef(null);
+  const sectionRefs = useRef({});
   const toolsMenuTimerRef = useRef(null);
   const [showToolsMenu, setShowToolsMenu] = useState(false);
   const PAGE_HEIGHT = 1122;
@@ -1059,6 +1062,57 @@ const Editor = () => {
     return () => window.removeEventListener("keydown", handler);
   }, [saveAll]);
 
+  const scrollToSection = (sectionId) => {
+    const sectionEl = sectionRefs.current[sectionId];
+    const scroller = document.querySelector(".main-container");
+    if (!sectionEl || !scroller) return;
+
+    const sectionTop =
+      sectionEl.getBoundingClientRect().top -
+      scroller.getBoundingClientRect().top +
+      scroller.scrollTop;
+
+    scroller.scrollTo({
+      top: Math.max(0, sectionTop - 72),
+      behavior: "smooth",
+    });
+
+    sectionEl.classList.add("section-validation-highlight");
+    window.setTimeout(() => {
+      sectionEl.classList.remove("section-validation-highlight");
+    }, 2400);
+  };
+
+  const focusFirstInvalidSection = (errMap = {}) => {
+    const firstSectionId = Object.keys(errMap)[0];
+    if (!firstSectionId) return;
+    scrollToSection(Number(firstSectionId) || firstSectionId);
+  };
+
+  const notifyRequiredSections = (errMap, actionLabel) => {
+    const entries = Object.entries(errMap);
+    if (!entries.length) return;
+
+    const sectionNames = entries.map(([, message]) =>
+      `${message || ""}`.replace(/ is required$/i, ""),
+    );
+    const sectionList = sectionNames.join(", ");
+    const message =
+      entries.length === 1
+        ? `Please complete the required section "${sectionNames[0]}" before you ${actionLabel}.`
+        : `Please complete ${entries.length} required sections (${sectionList}) before you ${actionLabel}.`;
+
+    focusFirstInvalidSection(errMap);
+
+    showPopup({
+      type: "error",
+      title: "Required sections incomplete",
+      message,
+      confirmText: "Go to section",
+      onConfirm: () => focusFirstInvalidSection(errMap),
+    });
+  };
+
   const validate = async () => {
     try {
       const res = await api.get(`/documents/${documentId}/validate`);
@@ -1067,22 +1121,34 @@ const Editor = () => {
         errMap[e.section_id] = e.message;
       });
       setErrors(errMap);
-      return Object.keys(errMap).length === 0;
+      return {
+        isValid: Object.keys(errMap).length === 0,
+        errMap,
+      };
     } catch {
       toast.error("Validation failed");
-      return false;
+      return { isValid: false, errMap: {} };
     }
   };
 
   const handlePreview = async () => {
     await saveAll();
-    const isValid = await validate();
-    if (!isValid) return;
+    const { isValid, errMap } = await validate();
+    if (!isValid) {
+      notifyRequiredSections(errMap, "preview this document");
+      return;
+    }
     const html = generatePrintHTML(template, sections, false);
     setPreviewHTML(html);
   };
 
   const handleExport = async () => {
+    await saveAll();
+    const { isValid, errMap } = await validate();
+    if (!isValid) {
+      notifyRequiredSections(errMap, "export to PDF");
+      return;
+    }
     const html = generatePrintHTML(template, sections, true);
     try {
       const res = await api.post(
@@ -1101,6 +1167,12 @@ const Editor = () => {
   };
 
   const handleExportWord = async () => {
+    await saveAll();
+    const { isValid, errMap } = await validate();
+    if (!isValid) {
+      notifyRequiredSections(errMap, "export to Word");
+      return;
+    }
     try {
       const res = await api.post(
         "/export/word",
@@ -1635,8 +1707,11 @@ const Editor = () => {
                   onClick={async () => {
                     const newStatus = status === "completed" ? "draft" : "completed";
                     if (newStatus === "completed") {
-                      const isValid = await validate();
-                      if (!isValid) return;
+                      const { isValid, errMap } = await validate();
+                      if (!isValid) {
+                        notifyRequiredSections(errMap, "mark this document as completed");
+                        return;
+                      }
                     }
                     try {
                       await api.put(`/documents/${documentId}/status`, { status: newStatus });
@@ -1663,7 +1738,14 @@ const Editor = () => {
               const blocks = getBlocksForSection(sec.id);
 
               return (
-                <div key={sec.id} className="section-block">
+                <div
+                  key={sec.id}
+                  className="section-block"
+                  ref={(node) => {
+                    if (node) sectionRefs.current[sec.id] = node;
+                    else delete sectionRefs.current[sec.id];
+                  }}
+                >
                   <div className={`section-header level-${sec.level}`}>
                     <span className="section-number">{sec.number}</span>
                     <input

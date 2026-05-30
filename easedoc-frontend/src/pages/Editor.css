@@ -274,6 +274,25 @@
 /* SECTION EDITING */
 .section-block {
   margin-bottom: var(--space-8);
+  border-radius: var(--radius-sm);
+  transition: box-shadow 0.25s ease, background 0.25s ease;
+}
+
+.section-block.section-validation-highlight {
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.04);
+  animation: sectionValidationPulse 0.9s ease 2;
+}
+
+@keyframes sectionValidationPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.35);
+  }
+
+  50% {
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.55);
+  }
 }
 
 .section-header {

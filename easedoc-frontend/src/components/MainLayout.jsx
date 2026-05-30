@@ -68,7 +68,7 @@ const MainLayout = () => {
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   if (loading) return <EasDocLoader message="Initializing system environment" />;
-  if (!user) return <Navigate to="/login" />;
+  if (!user) return <Navigate to="/" replace />;
 
   const isEditor = location.pathname.includes("/editor");
 

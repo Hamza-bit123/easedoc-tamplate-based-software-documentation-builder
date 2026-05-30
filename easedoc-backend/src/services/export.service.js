@@ -121,7 +121,9 @@ export const exportPDFService = async (html, res) => {
   const browser = await puppeteer.launch({
     args: isProduction ? chromium.args : [],
     defaultViewport: chromium.defaultViewport,
-    executablePath: isProduction ? await chromium.executablePath() : undefined,
+    executablePath: isProduction 
+      ? await chromium.executablePath() 
+      : "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
     headless: isProduction ? chromium.headless : true,
   });
 

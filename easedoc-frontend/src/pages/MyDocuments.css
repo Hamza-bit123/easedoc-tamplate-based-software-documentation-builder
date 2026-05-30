@@ -130,19 +130,18 @@
 }
 
 .undo-toast {
-  background: var(--bg-card);
-  color: var(--text-main);
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  border: 1px solid var(--border-color);
+  background: #323232;
+  color: #ffffff;
+  padding: 14px 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  min-width: 300px;
+  min-width: 320px;
   pointer-events: auto;
-  overflow: hidden;
   position: relative;
+  overflow: hidden;
+  font-family: var(--font-main);
 }
 
 .undo-toast-content {
@@ -150,33 +149,46 @@
   justify-content: space-between;
   align-items: center;
   gap: var(--space-4);
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 400;
 }
 
 .undo-btn {
-  background: var(--primary-light);
-  color: var(--primary);
+  background: transparent;
+  color: #60a5fa; /* A bright, legible blue */
   border: none;
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  border-radius: 4px;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 13px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease;
+  margin-left: auto;
 }
 
 .undo-btn:hover {
-  background: var(--primary);
-  color: white;
+  background: rgba(96, 165, 250, 0.1);
+  color: #93c5fd;
 }
 
 .undo-progress-bar {
-  height: 3px;
-  background: var(--primary);
+  height: 2px;
+  background: rgba(255, 255, 255, 0.2);
   width: 100%;
-  animation: shrink 5s linear forwards;
   position: absolute;
   bottom: 0;
   left: 0;
+}
+
+.undo-progress-bar::after {
+  content: "";
+  display: block;
+  height: 100%;
+  background: #60a5fa;
+  animation: shrink 5s linear forwards;
+  width: 100%;
 }
 
 @keyframes shrink {

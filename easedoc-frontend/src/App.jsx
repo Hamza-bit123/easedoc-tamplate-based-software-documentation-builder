@@ -1,5 +1,5 @@
 import { useContext, useMemo } from "react";
-import { createBrowserRouter, RouterProvider, createRoutesFromElements, Route, Navigate } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, createRoutesFromElements, Route } from "react-router-dom";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -18,6 +18,7 @@ import UserManagement from "./pages/UserManagement";
 import TemplateDetails from "./pages/TemplateDetails";
 import UserTemplates from "./pages/UserTemplates";
 import Profile from "./pages/Profile";
+import { HomeOrRedirect } from "./pages/Home";
 import { Toaster } from "react-hot-toast";
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
     createRoutesFromElements(
       <Route path="/">
         {/* PUBLIC ROUTES */}
+        <Route index element={<HomeOrRedirect />} />
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
 
@@ -38,18 +40,6 @@ function App() {
             </ProtectedRoute>
           }
         >
-          {/* ROOT REDIRECT */}
-          <Route
-            index
-            element={
-              user?.role === "admin" ? (
-                <Navigate to="/admin" />
-              ) : (
-                <Navigate to="/user" />
-              )
-            }
-          />
-
           {/* ADMIN SUB-ROUTES */}
           <Route path="admin">
             <Route index element={<AdminDashboard />} />

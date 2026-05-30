@@ -280,3 +280,7 @@
   padding: var(--space-4);
   text-align: center;
 }
+
+.create-doc-step {
+  scroll-margin-top: 24px;
+}

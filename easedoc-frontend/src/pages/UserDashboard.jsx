@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { FiFileText, FiCheckCircle, FiEdit2 } from "react-icons/fi";
 import {
@@ -13,8 +14,13 @@ import "./Dashboard.css";
 import EasDocLoader from "../components/EasDocLoader";
 
 const UserDashboard = () => {
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const openDocument = (documentId) => {
+    navigate(`/editor/${documentId}`);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -149,7 +155,13 @@ const UserDashboard = () => {
           <div className="recent-activity-list">
             {recentDocuments && recentDocuments.length > 0 ? (
               recentDocuments.map((doc) => (
-                <div className="activity-item" key={doc.id}>
+                <button
+                  type="button"
+                  className="activity-item activity-item-clickable"
+                  key={doc.id}
+                  onClick={() => openDocument(doc.id)}
+                  title={`Open ${doc.title}`}
+                >
                   <div className="activity-info">
                     <h4>{doc.title}</h4>
                     <p>{doc.template_name}</p>
@@ -157,7 +169,7 @@ const UserDashboard = () => {
                   <div className={`activity-status status-${doc.status?.toLowerCase().replace(/\s+/g, '-') || "draft"}`}>
                     {doc.status || "DRAFT"}
                   </div>
-                </div>
+                </button>
               ))
             ) : (
               <p style={{ color: "var(--text-muted)", textAlign: "center" }}>No recent documents</p>

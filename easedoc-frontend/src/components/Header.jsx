@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect, useContext } from "react";
 import { FiMenu, FiSidebar, FiSettings, FiLogOut, FiChevronDown } from "react-icons/fi";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import "./Header.css";
 
 const Header = ({ user, toggleSidebar }) => {
   const { logout } = useContext(AuthContext);
+  const navigate = useNavigate();
   const { fullName } = user;
   const name = fullName?.split(" ")[0] || "User";
 
@@ -64,6 +65,7 @@ const Header = ({ user, toggleSidebar }) => {
                 onClick={() => {
                   setIsProfileOpen(false);
                   logout();
+                  navigate("/");
                 }}
               >
                 <FiLogOut size={18} /> Log Out
