@@ -83,7 +83,7 @@ const getSectionBlocks = (contentObj = {}) => {
   ];
 };
 
-const generatePrintHTML = (template, sections, isPDF = false) => {
+const generatePrintHTML = (template, sections, isPDF = false, tocLevel = 0) => {
   const styles = isPDF
     ? `
     body {
@@ -516,6 +516,136 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
 
   if (currentHTML.trim()) pushPage();
 
+  // ── Table of Contents generation ──────────────────────────────────────────
+  let tocPages = [];
+  if (tocLevel >= 2 && numberedSections.length > 0) {
+    // Build a map of sectionId → page index (1-based) from the content pages
+    const sectionPageMap = new Map();
+    numberedSections.forEach((sec) => {
+      const contentObj = sections[sec.id];
+      const title = contentObj?.title || sec.title;
+      const titleHTML = getTitleHTML(sec, title);
+
+      // Walk through content pages to find which page contains each section title
+      let cumulativeHTML = "";
+      for (let pageIdx = 0; pageIdx < pages.length; pageIdx++) {
+        const pageContent = pages[pageIdx];
+        if (pageContent.includes(escapeHTML(title)) && pageContent.includes(`${sec.number}.`)) {
+          sectionPageMap.set(sec.id, pageIdx + 1);
+          break;
+        }
+      }
+      // Fallback: if not found in scan, assign page 1
+      if (!sectionPageMap.has(sec.id)) {
+        sectionPageMap.set(sec.id, 1);
+      }
+    });
+
+    // Filter sections by tocLevel
+    const tocEntries = numberedSections.filter((sec) => (sec.level || 1) <= tocLevel);
+
+    // Build ToC HTML
+    const tocItemsHTML = tocEntries.map((sec) => {
+      const contentObj = sections[sec.id];
+      const title = contentObj?.title || sec.title;
+      const level = sec.level || 1;
+      const indent = (level - 1) * 24;
+      const fontSize = level === 1 ? 13 : 11;
+      const fontWeight = level === 1 ? "700" : "400";
+      // Page number will be offset after we know how many ToC pages there are
+      const pageNum = sectionPageMap.get(sec.id) || 1;
+
+      return `
+        <div class="toc-entry" data-section-id="${sec.id}" style="
+          display: flex;
+          align-items: baseline;
+          margin-left: ${indent}px;
+          margin-bottom: ${level === 1 ? 8 : 4}px;
+          font-size: ${fontSize}px;
+          font-weight: ${fontWeight};
+          line-height: 1.8;
+          color: #1a1a1a;
+        ">
+          <span class="toc-number" style="flex-shrink:0; margin-right:6px;">${escapeHTML(sec.number)}</span>
+          <span class="toc-title" style="flex-shrink:0; margin-right:4px;">${escapeHTML(title)}</span>
+          <span class="toc-dots" style="flex:1; border-bottom:1px dotted #999; margin: 0 4px; min-width:20px; position:relative; top:-3px;"></span>
+          <span class="toc-page" data-page-offset="${pageNum}" style="flex-shrink:0; text-align:right; min-width:24px;">${pageNum}</span>
+        </div>
+      `;
+    }).join("");
+
+    // Measure how many pages the ToC occupies
+    const tocTitleHTML = `
+      <h1 style="
+        font-size: 20px;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 28px;
+        margin-top: 10px;
+        color: #111;
+        letter-spacing: 0.5px;
+      ">Table of Contents</h1>
+    `;
+    const fullTocContent = tocTitleHTML + tocItemsHTML;
+
+    // Paginate the ToC content
+    let tocCurrentHTML = "";
+    const tocContentParts = [tocTitleHTML, ...tocEntries.map((sec, i) => {
+      const contentObj = sections[sec.id];
+      const title = contentObj?.title || sec.title;
+      const level = sec.level || 1;
+      const indent = (level - 1) * 24;
+      const fontSize = level === 1 ? 13 : 11;
+      const fontWeight = level === 1 ? "700" : "400";
+      const pageNum = sectionPageMap.get(sec.id) || 1;
+
+      return `
+        <div class="toc-entry" style="
+          display: flex;
+          align-items: baseline;
+          margin-left: ${indent}px;
+          margin-bottom: ${level === 1 ? 8 : 4}px;
+          font-size: ${fontSize}px;
+          font-weight: ${fontWeight};
+          line-height: 1.8;
+          color: #1a1a1a;
+        ">
+          <span class="toc-number" style="flex-shrink:0; margin-right:6px;">${escapeHTML(sec.number)}</span>
+          <span class="toc-title" style="flex-shrink:0; margin-right:4px;">${escapeHTML(title)}</span>
+          <span class="toc-dots" style="flex:1; border-bottom:1px dotted #999; margin: 0 4px; min-width:20px; position:relative; top:-3px;"></span>
+          <span class="toc-page" style="flex-shrink:0; text-align:right; min-width:24px;">${pageNum}</span>
+        </div>
+      `;
+    })];
+
+    tocCurrentHTML = "";
+    for (const part of tocContentParts) {
+      const test = tocCurrentHTML + part;
+      if (getHeight(test) > CONTENT_HEIGHT && tocCurrentHTML.trim()) {
+        tocPages.push(tocCurrentHTML);
+        tocCurrentHTML = part;
+      } else {
+        tocCurrentHTML = test;
+      }
+    }
+    if (tocCurrentHTML.trim()) {
+      tocPages.push(tocCurrentHTML);
+    }
+
+    // Now offset all page numbers in ToC entries by the number of ToC pages
+    const tocPageCount = tocPages.length;
+    tocPages = tocPages.map((pageHTML) => {
+      return pageHTML.replace(
+        /(<span class="toc-page"[^>]*>)(\d+)(<\/span>)/g,
+        (match, before, num, after) => {
+          return before + (parseInt(num, 10) + tocPageCount) + after;
+        }
+      );
+    });
+  }
+
+  const totalPageCount = tocPages.length + pages.length;
+
   document.body.removeChild(measure);
 
   return `<!DOCTYPE html>
@@ -554,12 +684,21 @@ const generatePrintHTML = (template, sections, isPDF = false) => {
   </style>
 </head>
 <body>
+  ${tocPages
+    .map(
+      (p, i) => `
+    <div class="page">
+      ${p}
+      <div class="page-number">Page ${i + 1} of ${totalPageCount}</div>
+    </div>`,
+    )
+    .join("")}
   ${pages
     .map(
       (p, i) => `
     <div class="page">
       ${p}
-      <div class="page-number">Page ${i + 1} of ${pages.length}</div>
+      <div class="page-number">Page ${tocPages.length + i + 1} of ${totalPageCount}</div>
     </div>`,
     )
     .join("")}

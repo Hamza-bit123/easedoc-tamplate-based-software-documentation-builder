@@ -21,6 +21,9 @@ import {
   convertInchesToTwip,
   UnderlineType,
   ShadingType,
+  TabStopType,
+  TableOfContents,
+  PageBreak,
 } from "docx";
 import {
   buildSectionNumbers,
@@ -276,7 +279,7 @@ export const exportPDFService = async (html, res) => {
 
 // ─── Word export ─────────────────────────────────────────────────────────────
 
-export const exportWordService = async (template, sectionsMap, res) => {
+export const exportWordService = async (template, sectionsMap, res, tocLevel = 0) => {
   try {
     template.sections = buildSectionNumbers(template.sections);
     const figureLabels = computeFigureLabels(template, sectionsMap).labels;
@@ -533,6 +536,45 @@ export const exportWordService = async (template, sectionsMap, res) => {
       });
     });
 
+    // ── Table of Contents ─────────────────────────────────────────────────
+    const tocChildren = [];
+    if (tocLevel >= 2) {
+      // ToC Title
+      tocChildren.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: "Table of Contents",
+              size: 40, // 20pt
+              bold: true,
+              font: fontName,
+              color: "111111",
+            }),
+          ],
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 200, after: 420 },
+        }),
+      );
+
+      // Real Word ToC Field
+      tocChildren.push(
+        new TableOfContents("Table of Contents", {
+          hyperlink: true,
+          headingStyleRange: `1-${tocLevel}`,
+        })
+      );
+
+      // Page break after ToC to separate it from the next topic
+      tocChildren.push(
+        new Paragraph({
+          children: [new PageBreak()],
+        })
+      );
+    }
+
+    // Combine ToC + Document content
+    const allChildren = [...tocChildren, ...children];
+
     // ── Page-number footer (matches PDF preview "Page X of Y") ───────────
     const pageNumberFooter = new Footer({
       children: [
@@ -552,6 +594,9 @@ export const exportWordService = async (template, sectionsMap, res) => {
 
     // ── Assemble Document with all formatting rules enforced ──────────────
     const doc = new Document({
+      features: {
+        updateFields: true,
+      },
       // Default font for the whole document using standard defaults
       styles: {
         documentDefaults: {
@@ -655,7 +700,7 @@ export const exportWordService = async (template, sectionsMap, res) => {
           footers: {
             default: pageNumberFooter,
           },
-          children,
+          children: allChildren,
         },
       ],
     });

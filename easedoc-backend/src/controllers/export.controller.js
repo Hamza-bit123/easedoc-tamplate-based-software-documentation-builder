@@ -13,11 +13,11 @@ export const exportPDFController = (req, res) => {
 };
 
 export const exportWordController = (req, res) => {
-  const { template, sections } = req.body;
+  const { template, sections, tocLevel } = req.body;
 
   if (!template || !sections) {
     return res.status(400).send("Missing data");
   }
 
-  exportWordService(template, sections, res);
+  exportWordService(template, sections, res, tocLevel || 0);
 };

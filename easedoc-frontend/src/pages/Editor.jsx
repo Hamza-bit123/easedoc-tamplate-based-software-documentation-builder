@@ -21,6 +21,7 @@ import {
   FiFileText,
   FiGrid,
   FiImage,
+  FiList,
   FiMinus,
   FiPlus,
   FiSave,
@@ -397,6 +398,7 @@ const Editor = () => {
   const sectionRefs = useRef({});
   const toolsMenuTimerRef = useRef(null);
   const [showToolsMenu, setShowToolsMenu] = useState(false);
+  const [tocLevel, setTocLevel] = useState(0);
   const PAGE_HEIGHT = 1122;
 
   useEffect(() => {
@@ -1138,7 +1140,7 @@ const Editor = () => {
       notifyRequiredSections(errMap, "preview this document");
       return;
     }
-    const html = generatePrintHTML(template, sections, false);
+    const html = generatePrintHTML(template, sections, false, tocLevel);
     setPreviewHTML(html);
   };
 
@@ -1149,7 +1151,7 @@ const Editor = () => {
       notifyRequiredSections(errMap, "export to PDF");
       return;
     }
-    const html = generatePrintHTML(template, sections, true);
+    const html = generatePrintHTML(template, sections, true, tocLevel);
     try {
       const res = await api.post(
         "/export/pdf",
@@ -1176,7 +1178,7 @@ const Editor = () => {
     try {
       const res = await api.post(
         "/export/word",
-        { template, sections },
+        { template, sections, tocLevel },
         { responseType: "blob" },
       );
       const url = window.URL.createObjectURL(new Blob([res.data]));
@@ -1703,6 +1705,21 @@ const Editor = () => {
                 <button onClick={handleExportWord} className="tool-btn prominent-tool">
                   <BiSolidFileDoc /> <span>Word</span>
                 </button>
+                <div className={`tool-btn prominent-tool toc-selector-tool${tocLevel > 0 ? " toc-active" : ""}`} style={{ position: 'relative' }}>
+                  <FiList />
+                  <span>{tocLevel === 0 ? "ToC" : `ToC ${tocLevel}L`}</span>
+                  <select
+                    className="toc-level-select"
+                    value={tocLevel}
+                    onChange={(e) => setTocLevel(Number(e.target.value))}
+                    onClick={(e) => e.stopPropagation()}
+                    title="Table of Contents depth"
+                  >
+                    <option value={0}>No ToC</option>
+                    <option value={2}>ToC 2 Levels</option>
+                    <option value={3}>ToC 3 Levels</option>
+                  </select>
+                </div>
                 <button 
                   onClick={async () => {
                     const newStatus = status === "completed" ? "draft" : "completed";
