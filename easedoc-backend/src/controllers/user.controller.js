@@ -5,8 +5,9 @@ import {
   updateUserRoleService,
   deleteUserService,
   verifyEmailCodeService,
-  resendVerificationCodeService,
   updateProfileService,
+  requestPasswordResetService,
+  resetPasswordService,
 } from "../services/user.service.js";
 
 export const register = async (req, res) => {
@@ -100,3 +101,27 @@ export const updateProfile = async (req, res) => {
     });
   }
 };
+
+export const requestPasswordReset = async (req, res) => {
+  try {
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const result = await requestPasswordResetService({ ...req.body, frontendUrl });
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(400).json({
+      message: error.message || "Failed to request password reset",
+    });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const result = await resetPasswordService(req.body);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(400).json({
+      message: error.message || "Failed to reset password",
+    });
+  }
+};
+

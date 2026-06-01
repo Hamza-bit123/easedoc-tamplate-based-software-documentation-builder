@@ -3,6 +3,8 @@ import { createBrowserRouter, RouterProvider, createRoutesFromElements, Route } 
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import AdminDashboard from "./pages/AdminDashboard";
 import UserDashboard from "./pages/UserDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -18,7 +20,7 @@ import UserManagement from "./pages/UserManagement";
 import TemplateDetails from "./pages/TemplateDetails";
 import UserTemplates from "./pages/UserTemplates";
 import Profile from "./pages/Profile";
-import { HomeOrRedirect } from "./pages/Home";
+import Home from "./pages/Home";
 import { Toaster } from "react-hot-toast";
 
 function App() {
@@ -28,9 +30,11 @@ function App() {
     createRoutesFromElements(
       <Route path="/">
         {/* PUBLIC ROUTES */}
-        <Route index element={<HomeOrRedirect />} />
+        <Route index element={<Home />} />
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
+        <Route path="forgot-password" element={<ForgotPassword />} />
+        <Route path="reset-password" element={<ResetPassword />} />
 
         {/* PROTECTED LAYOUT WRAPPER */}
         <Route

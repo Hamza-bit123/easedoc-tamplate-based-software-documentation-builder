@@ -8,6 +8,8 @@ import {
   verifyEmailCode,
   resendVerificationCode,
   updateProfile,
+  requestPasswordReset,
+  resetPassword,
 } from "../controllers/user.controller.js";
 import { verifyToken, isAdmin } from "../middlewares/auth.middleware.js";
 
@@ -17,6 +19,8 @@ router.post("/register", register);
 router.post("/verify-email", verifyEmailCode);
 router.post("/resend-verification-code", resendVerificationCode);
 router.post("/login", login);
+router.post("/forgot-password", requestPasswordReset);
+router.post("/reset-password", resetPassword);
 
 // Profile routes
 router.put("/profile", verifyToken, updateProfile);

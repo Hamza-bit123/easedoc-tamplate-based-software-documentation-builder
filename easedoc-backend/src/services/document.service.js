@@ -7,6 +7,7 @@ import {
   getDocumentsByUser,
   updateDocumentTitle,
   deleteDocumentByOwner,
+  countUserDocuments,
 } from "../models/document.model.js";
 import db from "../config/db.js";
 
@@ -341,11 +342,25 @@ export const validateDocumentService = async (documentId) => {
   });
 };
 
-export const getUserDocumentsService = (userId) => {
+export const getUserDocumentsService = (userId, filters = {}) => {
   return new Promise((resolve, reject) => {
-    getDocumentsByUser(userId, (err, results) => {
+    getDocumentsByUser(userId, filters, (err, results) => {
       if (err) return reject(err);
-      resolve(results);
+      
+      countUserDocuments(userId, filters, (errCount, countResults) => {
+        if (errCount) return reject(errCount);
+        
+        const total = countResults[0].total;
+        const limit = Number(filters.limit) || 10;
+        const page = filters.page ? Number(filters.page) : 1;
+        
+        resolve({
+          data: results,
+          total,
+          page,
+          totalPages: Math.ceil(total / limit)
+        });
+      });
     });
   });
 };

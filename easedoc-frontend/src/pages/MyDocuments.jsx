@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiFileText, FiCalendar, FiArrowRight, FiPlus, FiPenTool, FiTrash2 } from "react-icons/fi";
+import { FiFileText, FiCalendar, FiArrowRight, FiPlus, FiPenTool, FiTrash2, FiSearch, FiFilter, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import api from "../api/axios";
 import "./MyDocuments.css";
 import toast from "react-hot-toast";
@@ -13,20 +13,53 @@ const MyDocuments = () => {
   const navigate = useNavigate();
   const { showPopup } = usePopup();
 
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [limit] = useState(10);
+  const [search, setSearch] = useState("");
+  const [docTypeId, setDocTypeId] = useState("");
+  const [standardId, setStandardId] = useState("");
+
+  const [docTypes, setDocTypes] = useState([]);
+  const [standards, setStandards] = useState([]);
+
   useEffect(() => {
-    loadDocs();
+    api.get("/document-types").then(res => setDocTypes(res.data)).catch(console.error);
   }, []);
 
-  const loadDocs = async () => {
+  useEffect(() => {
+    if (docTypeId) {
+      api.get(`/standards/${docTypeId}`).then(res => setStandards(res.data)).catch(console.error);
+    } else {
+      setStandards([]);
+      setStandardId("");
+    }
+  }, [docTypeId]);
+
+  const loadDocs = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await api.get("/documents/my");
-      setDocs(res.data);
+      const res = await api.get("/documents/my", {
+        params: { page, limit, search, docTypeId, standardId }
+      });
+      setDocs(res.data.data || []);
+      setTotalPages(res.data.totalPages || 1);
+      setTotalItems(res.data.total || 0);
     } catch {
       // Error loading documents
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, limit, search, docTypeId, standardId]);
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      loadDocs();
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [loadDocs]);
 
   const formatRelativeTime = (dateString) => {
     const now = new Date();
@@ -144,7 +177,7 @@ const MyDocuments = () => {
       <header className="docs-header">
         <div className="header-info">
           <h2>My Documents</h2>
-          <p>{docs.length} saved documents found</p>
+          <p>{totalItems} saved documents found</p>
         </div>
         <button
           className="create-btn"
@@ -153,6 +186,45 @@ const MyDocuments = () => {
           <FiPlus /> New Document
         </button>
       </header>
+
+      <div className="docs-filters-bar" style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="search-box" style={{ flex: '1', minWidth: '250px', position: 'relative' }}>
+          <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <input 
+            type="text" 
+            placeholder="Search by name..." 
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            style={{ width: '100%', padding: '10px 10px 10px 36px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-main)' }}
+          />
+        </div>
+        
+        <div className="filter-selects" style={{ display: 'flex', gap: '1rem' }}>
+          <select 
+            value={docTypeId} 
+            onChange={(e) => { setDocTypeId(e.target.value); setPage(1); }}
+            style={{ padding: '10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-main)', minWidth: '150px' }}
+          >
+            <option value="">All Types</option>
+            {docTypes.map(type => (
+              <option key={type.id} value={type.id}>{type.name}</option>
+            ))}
+          </select>
+
+          <select 
+            value={standardId} 
+            onChange={(e) => { setStandardId(e.target.value); setPage(1); }}
+            disabled={!docTypeId}
+            style={{ padding: '10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-main)', minWidth: '150px' }}
+          >
+            <option value="">All Standards</option>
+            {standards.map(std => (
+              <option key={std.id} value={std.id}>{std.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
 
       {docs.length === 0 ? (
         <div className="empty-state">
@@ -209,6 +281,26 @@ const MyDocuments = () => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="pagination-controls" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '2rem' }}>
+          <button 
+            disabled={page === 1} 
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            style={{ padding: '8px 12px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-main)', borderRadius: 'var(--radius-md)', cursor: page === 1 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+          >
+            <FiChevronLeft /> Previous
+          </button>
+          <span style={{ color: 'var(--text-muted)' }}>Page {page} of {totalPages}</span>
+          <button 
+            disabled={page === totalPages} 
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            style={{ padding: '8px 12px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-main)', borderRadius: 'var(--radius-md)', cursor: page === totalPages ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+          >
+            Next <FiChevronRight />
+          </button>
         </div>
       )}
     </div>

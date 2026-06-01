@@ -31,7 +31,7 @@ const Login = () => {
 
       login(res.data);
       toast.success("Welcome back!");
-      navigate("/");
+      navigate(res.data.user.role === 'admin' ? '/admin' : '/user');
     } catch (err) {
       const msg = err.response?.data?.message || "Login failed";
       setError(msg);
@@ -43,10 +43,10 @@ const Login = () => {
     <div className="auth-wrapper">
       <div className="auth-card">
         <div className="auth-header">
-          <div className="auth-logo">
+          <Link to="/" className="auth-logo" style={{ textDecoration: 'none', color: 'inherit' }}>
             <span className="logo-sparkle">✦</span>
             <span>EasDoc</span>
-          </div>
+          </Link>
           <h2>Welcome Back</h2>
           <p>Log in to EaseDoc to continue</p>
         </div>
@@ -73,6 +73,12 @@ const Login = () => {
             onChange={handleChange}
             required
           />
+
+          <div style={{ textAlign: "right", width: "100%", marginBottom: "1rem" }}>
+            <Link to="/forgot-password" style={{ fontSize: "14px", color: "#4f46e5", textDecoration: "none", fontWeight: "500" }}>
+              Forgot Password?
+            </Link>
+          </div>
 
           <button className="auth-btn" type="submit">
             Login

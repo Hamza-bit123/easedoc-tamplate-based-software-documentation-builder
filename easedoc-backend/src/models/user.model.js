@@ -79,3 +79,30 @@ export const updateUser = (userId, updates, callback) => {
   const sql = `UPDATE users SET ${fields.join(", ")} WHERE id = ?`;
   db.query(sql, values, callback);
 };
+
+export const createPasswordReset = (data, callback) => {
+  const sql = `
+    INSERT INTO password_resets (email, token, expires_at)
+    VALUES (?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+      token = VALUES(token),
+      expires_at = VALUES(expires_at)
+  `;
+  db.query(sql, [data.email, data.token, data.expiresAt], callback);
+};
+
+export const findPasswordResetByEmail = (email, callback) => {
+  const sql = "SELECT * FROM password_resets WHERE email = ?";
+  db.query(sql, [email], callback);
+};
+
+export const findPasswordResetByToken = (token, callback) => {
+  const sql = "SELECT * FROM password_resets WHERE token = ?";
+  db.query(sql, [token], callback);
+};
+
+export const deletePasswordReset = (email, callback) => {
+  const sql = "DELETE FROM password_resets WHERE email = ?";
+  db.query(sql, [email], callback);
+};
+

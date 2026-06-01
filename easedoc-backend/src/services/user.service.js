@@ -9,10 +9,13 @@ import {
   incrementPendingVerificationAttempts,
   upsertPendingUserVerification,
   updateUser,
+  createPasswordReset,
+  findPasswordResetByToken,
+  deletePasswordReset,
 } from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import db from "../config/db.js";
-import { sendVerificationCodeEmail } from "./email.service.js";
+import { sendVerificationCodeEmail, sendPasswordResetEmail } from "./email.service.js";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const VERIFICATION_CODE_EXPIRES_MINUTES = 10;
@@ -107,6 +110,31 @@ const deletePendingUserVerificationAsync = (email) =>
       resolve(result);
     });
   });
+
+const createPasswordResetAsync = (data) =>
+  new Promise((resolve, reject) => {
+    createPasswordReset(data, (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
+  });
+
+const findPasswordResetByTokenAsync = (token) =>
+  new Promise((resolve, reject) => {
+    findPasswordResetByToken(token, (err, results) => {
+      if (err) return reject(err);
+      resolve(results);
+    });
+  });
+
+const deletePasswordResetAsync = (email) =>
+  new Promise((resolve, reject) => {
+    deletePasswordReset(email, (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
+  });
+
 
 const createAndSendVerificationCode = async ({ fullName, email, password }) => {
   const code = generateVerificationCode();
@@ -389,4 +417,69 @@ export const updateProfileService = async (userId, data, currentUserRole) => {
     });
   });
 };
+
+export const requestPasswordResetService = async ({ email: rawEmail, frontendUrl }) => {
+  const email = normalizeEmail(rawEmail);
+  await validateEmail(email);
+
+  const existingUsers = await findUserByEmailAsync(email);
+  if (existingUsers.length === 0) {
+    throw { message: "User not found" };
+  }
+
+  const user = existingUsers[0];
+  const token = crypto.randomBytes(32).toString("hex");
+
+  await createPasswordResetAsync({
+    email,
+    token,
+    expiresAt: toMysqlDateTime(minutesFromNow(60)),
+  });
+
+  const resetLink = `${frontendUrl}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
+
+  await sendPasswordResetEmail({
+    to: email,
+    fullName: user.fullName,
+    resetLink,
+  });
+
+  return { message: "Password reset email sent" };
+};
+
+export const resetPasswordService = async ({ email: rawEmail, token, newPassword }) => {
+  const email = normalizeEmail(rawEmail);
+  
+  if (!token || !newPassword) {
+    throw { message: "Token and new password are required" };
+  }
+
+  const resetRows = await findPasswordResetByTokenAsync(token);
+  if (resetRows.length === 0) {
+    throw { message: "Invalid or expired reset token" };
+  }
+
+  const resetData = resetRows[0];
+  if (resetData.email !== email) {
+    throw { message: "Invalid or expired reset token" };
+  }
+
+  if (new Date(resetData.expires_at).getTime() < Date.now()) {
+    await deletePasswordResetAsync(email);
+    throw { message: "Reset token has expired" };
+  }
+
+  const existingUsers = await findUserByEmailAsync(email);
+  if (existingUsers.length === 0) {
+    throw { message: "User not found" };
+  }
+  
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  
+  await updateUserAsync(existingUsers[0].id, { password: hashedPassword });
+  await deletePasswordResetAsync(email);
+
+  return { message: "Password reset successful" };
+};
+
 

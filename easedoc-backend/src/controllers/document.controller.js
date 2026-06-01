@@ -40,6 +40,8 @@ export const getDocumentController = async (req, res) => {
 export const validateDocumentController = async (req, res) => {
   try {
     const errors = await validateDocumentService(req.params.id);
+
+
     res.json({ errors });
   } catch (err) {
     res.status(500).json(err);
@@ -48,8 +50,18 @@ export const validateDocumentController = async (req, res) => {
 
 export const getUserDocumentsController = async (req, res) => {
   try {
-    const docs = await getUserDocumentsService(req.user.id);
-    res.json(docs);
+    const { page, limit, search, docTypeId, standardId } = req.query;
+    const filters = {
+      page: page ? Number(page) : 1,
+      limit: limit ? Number(limit) : 10,
+      search: search || "",
+      docTypeId: docTypeId || null,
+      standardId: standardId || null,
+    };
+    filters.offset = (filters.page - 1) * filters.limit;
+
+    const result = await getUserDocumentsService(req.user.id, filters);
+    res.json(result);
   } catch (err) {
     res.status(500).json({ message: "Error fetching documents" });
   }

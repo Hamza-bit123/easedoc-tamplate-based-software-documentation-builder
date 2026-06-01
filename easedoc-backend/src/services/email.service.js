@@ -172,3 +172,66 @@ The EaseDoc Team`,
     };
   }
 };
+
+export const sendPasswordResetEmail = async ({
+  to,
+  fullName,
+  resetLink,
+}) => {
+  const apiInstance = createBrevoClient();
+
+  const firstName =
+    fullName?.trim().split(/\s+/)[0] || "there";
+
+  const safeFirstName = escapeHtml(firstName);
+
+  const fromEmail = String(
+    process.env.MAIL_FROM
+  ).trim();
+
+  try {
+    await apiInstance.sendTransacEmail({
+      sender: {
+        name: "EaseDoc Accounts",
+        email: fromEmail,
+      },
+
+      to: [
+        {
+          email: to,
+          name: fullName || "",
+        },
+      ],
+
+      replyTo: {
+        email: fromEmail,
+        name: "EaseDoc Accounts",
+      },
+
+      subject: "EaseDoc Password Reset Request",
+
+      textContent: `Hello ${firstName},\n\nYou requested to reset your password for your EaseDoc account.\n\nPlease click the link below to set a new password:\n${resetLink}\n\nThis link will expire in 1 hour.\n\nIf you did not request this, you can safely ignore this email.\n\nBest regards,\nThe EaseDoc Team`,
+
+      htmlContent: `
+      <div style="font-family: Arial, sans-serif; color: #333333; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #4f46e5;">Reset Your Password</h2>
+        <p>Hello ${safeFirstName},</p>
+        <p>You requested to reset your password for your EaseDoc account. Please click the button below to set a new password:</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${resetLink}" style="background-color: #4f46e5; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Reset Password</a>
+        </div>
+        <p style="color: #64748b; font-size: 14px;">This link expires in 1 hour.</p>
+        <p>If you did not request this email, you can safely ignore it.</p>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;" />
+        <p style="color: #64748b; font-size: 13px;">Best regards,<br /><strong>The EaseDoc Team</strong></p>
+      </div>
+      `,
+    });
+  } catch (err) {
+    console.error(err);
+
+    throw {
+      message: formatSendMailError(err),
+    };
+  }
+};
