@@ -162,6 +162,7 @@ export const customizeTemplateController = async (req, res) => {
     const result = await customizeTemplateService(templateId, userId);
     res.json(result);
   } catch (err) {
+    console.error("Error in customizeTemplateController:", err);
     res.status(500).json({ message: "Failed to customize template" });
   }
 };

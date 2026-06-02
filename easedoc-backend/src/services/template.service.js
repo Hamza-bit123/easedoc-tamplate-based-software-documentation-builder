@@ -359,7 +359,7 @@ export const customizeTemplateService = async (templateId, userId) => {
         s.title_font_size, s.title_font_weight, s.title_text_align,
         s.body_font_size, s.body_font_weight, s.body_text_align,
         s.line_height, s.list_type, s.margin_top, s.margin_bottom, s.padding_left, i + 1,
-        s.seed_blocks || null
+        s.seed_blocks ? (typeof s.seed_blocks === 'object' ? JSON.stringify(s.seed_blocks) : s.seed_blocks) : null
       ]);
       await db.promise().query(
         `INSERT INTO template_section_versions (template_version_id, title, level, is_required, 
