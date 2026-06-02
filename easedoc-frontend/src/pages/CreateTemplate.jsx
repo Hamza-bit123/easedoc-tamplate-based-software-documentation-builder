@@ -351,7 +351,7 @@ const CreateTemplate = () => {
 
         {sections.map((sec, i) => (
           <div key={i} className="section-card">
-            <button className="btn danger" onClick={() => removeSection(i)}>
+            <button type="button" className="btn danger" onClick={() => removeSection(i)}>
               Remove
             </button>
 
